@@ -1,7 +1,9 @@
 <template>
   <header class="text-white p-4 flex justify-between items-center">
     <div class="flex items-center space-x-4">
-      <router-link to="/" class="text-lg font-bold w-16">首頁</router-link>
+      <router-link to="/" class="text-lg font-bold w-16 whitespace-nowrap"
+        >首頁</router-link
+      >
       <input
         type="text"
         placeholder="搜尋商品..."
