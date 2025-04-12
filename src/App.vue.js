@@ -17,7 +17,7 @@ const __VLS_1 = __VLS_0({
     ...{ class: "bg-base-100 border-b-4 border-base-300 h-16" },
 }, ...__VLS_functionalComponentArgsRest(__VLS_0));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "drawer md:drawer-open" },
+    ...{ class: "drawer md:drawer-open @container" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
     id: "drawer-toggle",
@@ -25,7 +25,7 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.input)({
     ...{ class: "drawer-toggle" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
-    ...{ class: "drawer-content border-l-4 border-base-300" },
+    ...{ class: "drawer-content md:border-l-4 border-base-300 min-h-[calc(100vh-16rem)]" },
 });
 __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements.label)({
     for: "drawer-toggle",
@@ -49,18 +49,18 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.label, __VLS_intrinsicElements
 /** @type {[typeof Aside, ]} */ ;
 // @ts-ignore
 const __VLS_7 = __VLS_asFunctionalComponent(Aside, new Aside({
-    ...{ class: "p-4 md:p-6 bg-base-100 w-64 max-md:w-full" },
+    ...{ class: "p-4 bg-base-100 w-64 md:p-6 max-md:w-64 min-h-[calc(100vh)]" },
 }));
 const __VLS_8 = __VLS_7({
-    ...{ class: "p-4 md:p-6 bg-base-100 w-64 max-md:w-full" },
+    ...{ class: "p-4 bg-base-100 w-64 md:p-6 max-md:w-64 min-h-[calc(100vh)]" },
 }, ...__VLS_functionalComponentArgsRest(__VLS_7));
 /** @type {[typeof Footer, ]} */ ;
 // @ts-ignore
 const __VLS_10 = __VLS_asFunctionalComponent(Footer, new Footer({
-    ...{ class: "bg-base-300 footer sm:footer-horizontal text-neutral-content p-10" },
+    ...{ class: "bg-base-300 sm:footer-horizontal text-neutral-content p-10" },
 }));
 const __VLS_11 = __VLS_10({
-    ...{ class: "bg-base-300 footer sm:footer-horizontal text-neutral-content p-10" },
+    ...{ class: "bg-base-300 sm:footer-horizontal text-neutral-content p-10" },
 }, ...__VLS_functionalComponentArgsRest(__VLS_10));
 __VLS_asFunctionalElement(__VLS_intrinsicElements.div, __VLS_intrinsicElements.div)({
     ...{ class: "bg-base-300 text-base-content text-center" },
@@ -76,10 +76,12 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(
 /** @type {__VLS_StyleScopedClasses['h-16']} */ ;
 /** @type {__VLS_StyleScopedClasses['drawer']} */ ;
 /** @type {__VLS_StyleScopedClasses['md:drawer-open']} */ ;
+/** @type {__VLS_StyleScopedClasses['@container']} */ ;
 /** @type {__VLS_StyleScopedClasses['drawer-toggle']} */ ;
 /** @type {__VLS_StyleScopedClasses['drawer-content']} */ ;
-/** @type {__VLS_StyleScopedClasses['border-l-4']} */ ;
+/** @type {__VLS_StyleScopedClasses['md:border-l-4']} */ ;
 /** @type {__VLS_StyleScopedClasses['border-base-300']} */ ;
+/** @type {__VLS_StyleScopedClasses['min-h-[calc(100vh-16rem)]']} */ ;
 /** @type {__VLS_StyleScopedClasses['btn']} */ ;
 /** @type {__VLS_StyleScopedClasses['btn-primary']} */ ;
 /** @type {__VLS_StyleScopedClasses['drawer-button']} */ ;
@@ -92,12 +94,12 @@ __VLS_asFunctionalElement(__VLS_intrinsicElements.p, __VLS_intrinsicElements.p)(
 /** @type {__VLS_StyleScopedClasses['drawer-side']} */ ;
 /** @type {__VLS_StyleScopedClasses['drawer-overlay']} */ ;
 /** @type {__VLS_StyleScopedClasses['p-4']} */ ;
-/** @type {__VLS_StyleScopedClasses['md:p-6']} */ ;
 /** @type {__VLS_StyleScopedClasses['bg-base-100']} */ ;
 /** @type {__VLS_StyleScopedClasses['w-64']} */ ;
-/** @type {__VLS_StyleScopedClasses['max-md:w-full']} */ ;
+/** @type {__VLS_StyleScopedClasses['md:p-6']} */ ;
+/** @type {__VLS_StyleScopedClasses['max-md:w-64']} */ ;
+/** @type {__VLS_StyleScopedClasses['min-h-[calc(100vh)]']} */ ;
 /** @type {__VLS_StyleScopedClasses['bg-base-300']} */ ;
-/** @type {__VLS_StyleScopedClasses['footer']} */ ;
 /** @type {__VLS_StyleScopedClasses['sm:footer-horizontal']} */ ;
 /** @type {__VLS_StyleScopedClasses['text-neutral-content']} */ ;
 /** @type {__VLS_StyleScopedClasses['p-10']} */ ;

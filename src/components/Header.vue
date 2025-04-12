@@ -11,7 +11,7 @@
       />
     </div>
     <div class="flex space-x-4">
-      <button class="btn">登入</button>
+      <router-link to="/login" class="btn">登入</router-link>
       <button class="btn">註冊</button>
       <button class="btn">會員中心</button>
       <button class="btn">查訂單</button>
