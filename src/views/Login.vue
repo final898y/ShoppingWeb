@@ -101,41 +101,76 @@ onMounted(() => {
   document.head.appendChild(script);
 
   // 在頁面載入時生成並儲存 CSRF token
-  const setCsrfToken = crypto.randomUUID();
-  const isSecure = window.location.protocol === "https:";
+  // const isSecure = window.location.protocol === "https:";
 
   // document.cookie = `g_csrf_token=${setCsrfToken}; Path=/; SameSite=${
   //   isSecure ? "None" : "Lax"
   // }${isSecure ? "; Secure" : ""}`;
-  document.cookie = `g_csrf_token=${setCsrfToken}; SameSite=Lax; Path=/`;
-  // document.cookie = `g_csrf_token=${setCsrfToken}; SameSite=None; Secure`;
+  //document.cookie = `g_csrf_token=${setCsrfToken}; SameSite=Lax; Path=/`;
+  // document.cookie = `g_csrf_token=${setCsrfToken}; SameSite=None; Secure; Path=/`;
 });
 
 // Email and password data
 const email = ref("");
 const password = ref("");
 
-//測試網域似乎無法取得google端給的，只能先自行設置
+const getCsrfTokenFromServer = async (): Promise<string | null> => {
+  try {
+    const res = await fetch(
+      "https://tradebackendfinal898y.azurewebsites.net/api/googleAuth/getCsrfToken",
+      {
+        credentials: "include",
+      }
+    );
+
+    if (!res.ok) {
+      console.error(`⚠️ 無法取得 CSRF Token，狀態碼：${res.status}`);
+      return null;
+    }
+
+    const data = await res.json();
+    if (!data.success) {
+      console.warn("⚠️ CSRF Token 回傳失敗：", data);
+      return null;
+    }
+
+    console.log("✅ CSRF Token 已取得：", data.csrfToken);
+    return data.csrfToken; // 直接傳回 token 而不是馬上讀 cookie
+  } catch (err) {
+    console.error("❌ 發生錯誤：無法從伺服器取得 CSRF Token", err);
+    return null;
+  }
+};
 
 // Handle the credential response from Google Sign-In
 const handleCredentialResponse = async (response: CredentialResponse) => {
-  const csrfToken = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("g_csrf_token="))
-    ?.split("=")[1];
+  const token = await getCsrfTokenFromServer();
+
+  // 延遲讀取 cookie（保險起見）
+  await new Promise((r) => setTimeout(r, 100));
+  const csrfToken =
+    document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("g_csrf_token="))
+      ?.split("=")[1] ?? token; // 用備援的 token
+
+  if (!csrfToken) {
+    console.warn("⚠️ 無法取得 CSRF Token，請檢查是否正確設置 cookie");
+    return;
+  }
 
   const body = new URLSearchParams();
   body.append("credential", response.credential);
-  if (csrfToken) {
-    body.append("g_csrf_token", csrfToken); // 第二份 CSRF token（來自 Cookie）
-  }
+  body.append("g_csrf_token", csrfToken);
+  console.log(body);
+
   const res = await fetch(
-    "https://localhost/api/googleAuth/verifyGoogleIdToken",
+    "https://tradebackendfinal898y.azurewebsites.net/api/googleAuth/verifyGoogleIdToken",
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body,
-      credentials: "include", // ✅ 加這行才會帶 cookie！
+      credentials: "include",
     }
   );
 
