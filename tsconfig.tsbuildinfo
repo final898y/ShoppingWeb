@@ -1,1 +1,1 @@
-{"root":["./src/main.ts","./src/vite-env.d.ts","./src/router/index.ts","./src/app.vue","./src/components/aside.vue","./src/components/footer.vue","./src/components/header.vue","./src/views/home.vue","./src/views/login.vue"],"version":"5.7.3"}
+{"root":["./src/main.ts","./src/vite-env.d.ts","./src/router/index.ts","./src/app.vue","./src/components/aside.vue","./src/components/footer.vue","./src/components/header.vue","./src/views/home.vue","./src/views/login.vue","./src/views/loginsuccess.vue","./src/views/register.vue"],"version":"5.7.3"}

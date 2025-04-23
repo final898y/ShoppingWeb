@@ -99,15 +99,6 @@ onMounted(() => {
   };
 
   document.head.appendChild(script);
-
-  // 在頁面載入時生成並儲存 CSRF token
-  // const isSecure = window.location.protocol === "https:";
-
-  // document.cookie = `g_csrf_token=${setCsrfToken}; Path=/; SameSite=${
-  //   isSecure ? "None" : "Lax"
-  // }${isSecure ? "; Secure" : ""}`;
-  //document.cookie = `g_csrf_token=${setCsrfToken}; SameSite=Lax; Path=/`;
-  // document.cookie = `g_csrf_token=${setCsrfToken}; SameSite=None; Secure; Path=/`;
 });
 
 // Email and password data
@@ -142,9 +133,21 @@ const getCsrfTokenFromServer = async (): Promise<string | null> => {
   }
 };
 
+let csrfToken: string | null = null;
+let csrfTokenTime: number = 0;
+
+const getTokenOnce = async () => {
+  const now = Date.now();
+  if (!csrfToken || now - csrfTokenTime > 10 * 60 * 1000) {
+    csrfToken = await getCsrfTokenFromServer();
+    csrfTokenTime = Date.now();
+  }
+  return csrfToken;
+};
+
 // Handle the credential response from Google Sign-In
 const handleCredentialResponse = async (response: CredentialResponse) => {
-  const token = await getCsrfTokenFromServer();
+  const token = await getTokenOnce();
 
   // 延遲讀取 cookie（保險起見）
   await new Promise((r) => setTimeout(r, 100));
