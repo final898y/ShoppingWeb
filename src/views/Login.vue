@@ -51,6 +51,8 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { onMounted } from "vue";
+import { isApiResponse, isApiResponseOfType } from "@/models/backendApiModel";
+import router from "@/router/index";
 
 // 宣告 google 的全域變數（讓 TS 不報錯）
 declare global {
@@ -108,25 +110,25 @@ const password = ref("");
 const getCsrfTokenFromServer = async (): Promise<string | null> => {
   try {
     const res = await fetch(
-      "https://tradebackendfinal898y.azurewebsites.net/api/googleAuth/getCsrfToken",
+      "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/googleAuth/getCsrfToken",
       {
+        method: "GET",
         credentials: "include",
       }
     );
-
     if (!res.ok) {
       console.error(`⚠️ 無法取得 CSRF Token，狀態碼：${res.status}`);
       return null;
     }
 
-    const data = await res.json();
-    if (!data.success) {
-      console.warn("⚠️ CSRF Token 回傳失敗：", data);
+    const responsedata = await res.json();
+    if (!responsedata.success) {
+      console.warn("⚠️ CSRF Token 回傳失敗");
       return null;
     }
 
-    console.log("✅ CSRF Token 已取得：", data.csrfToken);
-    return data.csrfToken; // 直接傳回 token 而不是馬上讀 cookie
+    console.log("✅ CSRF Token 已取得");
+    return responsedata.data; // 直接傳回 token 而不是馬上讀 cookie
   } catch (err) {
     console.error("❌ 發生錯誤：無法從伺服器取得 CSRF Token", err);
     return null;
@@ -145,18 +147,27 @@ const getTokenOnce = async () => {
   return csrfToken;
 };
 
+const waitForCookie = async (
+  name: string,
+  timeout = 1000
+): Promise<string | null> => {
+  const start = Date.now();
+  while (Date.now() - start < timeout) {
+    const cookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith(`${name}=`));
+    if (cookie) return cookie.split("=")[1];
+    await new Promise((r) => setTimeout(r, 50)); // 每 50 毫秒檢查一次
+  }
+  return null; // 時間到了還是沒拿到
+};
+
 // Handle the credential response from Google Sign-In
 const handleCredentialResponse = async (response: CredentialResponse) => {
   const token = await getTokenOnce();
 
-  // 延遲讀取 cookie（保險起見）
-  await new Promise((r) => setTimeout(r, 100));
-  const csrfToken =
-    document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("g_csrf_token="))
-      ?.split("=")[1] ?? token; // 用備援的 token
-
+  // 使用方式：
+  const csrfToken = (await waitForCookie("g_csrf_token")) ?? token;
   if (!csrfToken) {
     console.warn("⚠️ 無法取得 CSRF Token，請檢查是否正確設置 cookie");
     return;
@@ -165,10 +176,9 @@ const handleCredentialResponse = async (response: CredentialResponse) => {
   const body = new URLSearchParams();
   body.append("credential", response.credential);
   body.append("g_csrf_token", csrfToken);
-  console.log(body);
 
   const res = await fetch(
-    "https://tradebackendfinal898y.azurewebsites.net/api/googleAuth/verifyGoogleIdToken",
+    "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/googleAuth/verifyGoogleIdToken",
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -178,7 +188,12 @@ const handleCredentialResponse = async (response: CredentialResponse) => {
   );
 
   const result = await res.json();
-  console.log(result);
+  if (isApiResponseOfType<string>(result, (data) => typeof data === "string")) {
+    console.log("收到字串資料:", result.data);
+    router.push("/loginsuccess");
+  } else {
+    console.error("資料格式錯誤或資料不是字串！");
+  }
 };
 
 // Handle form submission

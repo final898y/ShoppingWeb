@@ -17,6 +17,11 @@ const routes: RouteRecordRaw[] = [
     name: "Register",
     component: () => import("../views/Register.vue"),
   },
+  {
+    path: "/loginsuccess",
+    name: "LoginSuccess",
+    component: () => import("../views/LoginSuccess.vue"),
+  },
   // 可根據需求新增其他路由
 ];
 

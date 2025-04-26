@@ -14,14 +14,12 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: "SuccessPage",
-  methods: {
-    goToHome() {
-      // Replace with your actual home route
-      this.$router.push("/");
-    },
-  },
-};
+<script setup lang="ts">
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+
+function goToHome() {
+  router.push("/");
+}
 </script>
