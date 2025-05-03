@@ -13,7 +13,7 @@
     <div class="flex space-x-4">
       <router-link to="/login" class="btn">登入</router-link>
       <router-link to="/register" class="btn">註冊</router-link>
-      <button class="btn">會員中心</button>
+      <router-link to="/membercenter" class="btn">會員中心</router-link>
       <button class="btn">查訂單</button>
       <button class="btn">追蹤清單</button>
       <button class="btn">折價券</button>

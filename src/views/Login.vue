@@ -51,8 +51,15 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { onMounted } from "vue";
-import { isApiResponse, isApiResponseOfType } from "@/models/backendApiModel";
+import {
+  isApiResponse,
+  isApiResponseOfType,
+  UserDataType,
+  isUserData,
+} from "@/models/backendApiModel";
 import router from "@/router/index";
+import { useCounterStore } from "../models/userModel";
+const loginuserstore = useCounterStore();
 
 // 宣告 google 的全域變數（讓 TS 不報錯）
 declare global {
@@ -110,7 +117,7 @@ const password = ref("");
 const getCsrfTokenFromServer = async (): Promise<string | null> => {
   try {
     const res = await fetch(
-      "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/googleAuth/getCsrfToken",
+      "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/auth/getCsrfToken",
       {
         method: "GET",
         credentials: "include",
@@ -178,7 +185,7 @@ const handleCredentialResponse = async (response: CredentialResponse) => {
   body.append("g_csrf_token", csrfToken);
 
   const res = await fetch(
-    "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/googleAuth/verifyGoogleIdToken",
+    "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/auth/verifyGoogleIdToken",
     {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -188,11 +195,25 @@ const handleCredentialResponse = async (response: CredentialResponse) => {
   );
 
   const result = await res.json();
-  if (isApiResponseOfType<string>(result, (data) => typeof data === "string")) {
-    console.log("收到字串資料:", result.data);
-    router.push("/loginsuccess");
+  if (
+    isApiResponseOfType<UserDataType>(result, isUserData) &&
+    isUserData(result.data)
+  ) {
+    loginuserstore.email = result.data.email;
+    loginuserstore.mobilephone = result.data.mobilephone;
+    if (result.success) {
+      console.log("已註冊");
+      loginuserstore.isregistered = true;
+      router.push("/loginresult");
+    } else {
+      console.log("未註冊");
+      loginuserstore.isregistered = false;
+      router.push("/loginresult");
+    }
   } else {
-    console.error("資料格式錯誤或資料不是字串！");
+    console.error("資料格式錯誤！");
+    loginuserstore.isregistered = false;
+    router.push("/loginresult");
   }
 };
 
