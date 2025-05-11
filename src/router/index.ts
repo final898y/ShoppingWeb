@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import type { RouteRecordRaw } from "vue-router";
+import * as csrfHelper from "@/utils/csrfToken";
 
 const routes: RouteRecordRaw[] = [
   {
@@ -39,12 +40,16 @@ const router = createRouter({
 // 🔐 路由守衛
 router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth) {
-    const res = await fetch("http://localhost:3000/profile", {
-      credentials: "include", // 💡 否則 cookie 不會帶過去
-    });
-
-    const data = await res.json();
-
+    const body = await csrfHelper.setcsrfTokenAsRequestBody();
+    const res = await fetch(
+      "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/auth/refresh",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+        credentials: "include",
+      }
+    );
     if (res.ok) {
       // 已登入，允許前往
       next();

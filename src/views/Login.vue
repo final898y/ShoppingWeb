@@ -58,8 +58,9 @@ import {
   isUserData,
 } from "@/models/backendApiModel";
 import router from "@/router/index";
-import { useCounterStore } from "../models/userModel";
-const loginuserstore = useCounterStore();
+import { useLoginStore } from "@/stores/userStore";
+import * as csrfHelper from "@/utils/csrfToken";
+const loginuserstore = useLoginStore();
 
 // 宣告 google 的全域變數（讓 TS 不報錯）
 declare global {
@@ -114,75 +115,10 @@ onMounted(() => {
 const email = ref("");
 const password = ref("");
 
-const getCsrfTokenFromServer = async (): Promise<string | null> => {
-  try {
-    const res = await fetch(
-      "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/auth/getCsrfToken",
-      {
-        method: "GET",
-        credentials: "include",
-      }
-    );
-    if (!res.ok) {
-      console.error(`⚠️ 無法取得 CSRF Token，狀態碼：${res.status}`);
-      return null;
-    }
-
-    const responsedata = await res.json();
-    if (!responsedata.success) {
-      console.warn("⚠️ CSRF Token 回傳失敗");
-      return null;
-    }
-
-    console.log("✅ CSRF Token 已取得");
-    return responsedata.data; // 直接傳回 token 而不是馬上讀 cookie
-  } catch (err) {
-    console.error("❌ 發生錯誤：無法從伺服器取得 CSRF Token", err);
-    return null;
-  }
-};
-
-let csrfToken: string | null = null;
-let csrfTokenTime: number = 0;
-
-const getTokenOnce = async () => {
-  const now = Date.now();
-  if (!csrfToken || now - csrfTokenTime > 10 * 60 * 1000) {
-    csrfToken = await getCsrfTokenFromServer();
-    csrfTokenTime = Date.now();
-  }
-  return csrfToken;
-};
-
-const waitForCookie = async (
-  name: string,
-  timeout = 1000
-): Promise<string | null> => {
-  const start = Date.now();
-  while (Date.now() - start < timeout) {
-    const cookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith(`${name}=`));
-    if (cookie) return cookie.split("=")[1];
-    await new Promise((r) => setTimeout(r, 50)); // 每 50 毫秒檢查一次
-  }
-  return null; // 時間到了還是沒拿到
-};
-
 // Handle the credential response from Google Sign-In
 const handleCredentialResponse = async (response: CredentialResponse) => {
-  const token = await getTokenOnce();
-
-  // 使用方式：
-  const csrfToken = (await waitForCookie("g_csrf_token")) ?? token;
-  if (!csrfToken) {
-    console.warn("⚠️ 無法取得 CSRF Token，請檢查是否正確設置 cookie");
-    return;
-  }
-
-  const body = new URLSearchParams();
+  const body = await csrfHelper.setcsrfTokenAsRequestBody();
   body.append("credential", response.credential);
-  body.append("g_csrf_token", csrfToken);
 
   const res = await fetch(
     "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/auth/verifyGoogleIdToken",
@@ -199,15 +135,19 @@ const handleCredentialResponse = async (response: CredentialResponse) => {
     isApiResponseOfType<UserDataType>(result, isUserData) &&
     isUserData(result.data)
   ) {
-    loginuserstore.email = result.data.email;
-    loginuserstore.mobilephone = result.data.mobilephone;
     if (result.success) {
       console.log("已註冊");
-      loginuserstore.isregistered = true;
+      loginuserstore.loginIsRegistered(
+        result.data.email,
+        result.data.mobilephone
+      );
       router.push("/loginresult");
     } else {
       console.log("未註冊");
-      loginuserstore.isregistered = false;
+      loginuserstore.loginNotRegistered(
+        result.data.email,
+        result.data.mobilephone
+      );
       router.push("/loginresult");
     }
   } else {

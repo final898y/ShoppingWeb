@@ -3,7 +3,8 @@ import axios, { InternalAxiosRequestConfig, AxiosError } from "axios";
 import router from "@/router"; // 注意：這裡要用絕對路徑或相對路徑，看你的設定
 
 // 設置預設配置
-axios.defaults.baseURL = "http://localhost:3000";
+axios.defaults.baseURL =
+  "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api";
 axios.defaults.withCredentials = true;
 
 // 排隊請求的型別
@@ -59,7 +60,7 @@ axios.interceptors.response.use(
 
       try {
         // 嘗試刷新 token
-        const response = await axios.post("/refresh");
+        const response = await axios.post("auth/refresh");
         const refreshStatus = response.data.success; // 假設後端返回新 token
 
         // 如果刷新成功，處理排隊的請求

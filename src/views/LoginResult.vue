@@ -24,10 +24,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { useRouter } from "vue-router";
-import { useCounterStore } from "../models/userModel";
+import { useLoginStore } from "../stores/userStore";
 
 // Pinia store 與 router
-const userStore = useCounterStore();
+const userStore = useLoginStore();
 const router = useRouter();
 
 // 提出 isRegistered 為 computed 變數，讓語意更清楚
