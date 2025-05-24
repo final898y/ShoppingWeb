@@ -78,21 +78,34 @@ const checkServerStatus = async () => {
 };
 
 const logout = async () => {
+  // 取得 CSRF Token 並設定為表單格式
   const body = await csrfHelper.setcsrfTokenAsRequestBody();
   body.append("mobilephone", loginStore.mobilephone);
-  const res = await fetch("auth/logout", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body,
-    credentials: "include",
-  });
-  const result = await res.json();
-  if (isApiResponse(result) && result.success) {
-    loginStore.logout();
-    router.push("/");
-  } else {
-    loginStore.resultmessage = "登出失敗";
-    console.log("登出失敗");
+
+  // 將 body 轉換為 URL-encoded 格式的字串
+  const formData = new URLSearchParams(body as any);
+
+  try {
+    // 使用 Axios 發送 POST 請求
+    const res = await axios.post("/auth/logout", formData, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      withCredentials: true,
+    });
+
+    const result = res.data;
+
+    if (isApiResponse(result) && result.success) {
+      loginStore.logout();
+      router.push("/");
+    } else {
+      loginStore.resultmessage = "登出失敗";
+      console.log("登出失敗");
+    }
+  } catch (error) {
+    loginStore.resultmessage = "登出錯誤";
+    console.error("登出請求失敗：", error);
   }
 };
 

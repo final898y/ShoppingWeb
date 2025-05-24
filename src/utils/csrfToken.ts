@@ -1,11 +1,10 @@
+import { API_BASE_URL } from "@/config";
+
 const getCsrfTokenFromServer = async (): Promise<string> => {
-  const res = await fetch(
-    "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/auth/getCsrfToken",
-    {
-      method: "GET",
-      credentials: "include",
-    }
-  );
+  const res = await fetch(`${API_BASE_URL}/auth/getCsrfToken`, {
+    method: "GET",
+    credentials: "include",
+  });
   if (!res.ok) {
     throw new Error(`無法取得 CSRF Token，狀態碼：${res.status}`);
   }

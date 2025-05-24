@@ -49,6 +49,7 @@
 </template>
 
 <script setup lang="ts">
+import { API_BASE_URL } from "@/config";
 import { ref } from "vue";
 import { onMounted } from "vue";
 import {
@@ -120,15 +121,12 @@ const handleCredentialResponse = async (response: CredentialResponse) => {
   const body = await csrfHelper.setcsrfTokenAsRequestBody();
   body.append("credential", response.credential);
 
-  const res = await fetch(
-    "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api/auth/verifyGoogleIdToken",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body,
-      credentials: "include",
-    }
-  );
+  const res = await fetch(`${API_BASE_URL}/auth/verifyGoogleIdToken`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+    credentials: "include",
+  });
 
   const result = await res.json();
   if (

@@ -1,10 +1,10 @@
 // src/utils/axios.ts
 import axios, { InternalAxiosRequestConfig, AxiosError } from "axios";
 import router from "@/router"; // 注意：這裡要用絕對路徑或相對路徑，看你的設定
+import { API_BASE_URL } from "@/config";
 
 // 設置預設配置
-axios.defaults.baseURL =
-  "https://tradebackendapitest-f7djcbgmc0f5hrfv.japaneast-01.azurewebsites.net/api";
+axios.defaults.baseURL = API_BASE_URL;
 axios.defaults.withCredentials = true;
 
 // 排隊請求的型別
