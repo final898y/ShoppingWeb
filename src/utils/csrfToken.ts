@@ -35,7 +35,7 @@ const CsrfTokenManager = (() => {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
-    return ""; // 理論上不會走到這行
+    return "";
   };
 
   return {
@@ -54,46 +54,15 @@ const CsrfTokenManager = (() => {
   };
 })();
 
-// function getCookie(name: string): string | undefined {
-//   const cookies = document.cookie
-//     .split("; ")
-//     .map((cookie) => cookie.split("="));
-//   const found = cookies.find(([key]) => key === name);
-//   return found ? found[1] : undefined;
-// }
-
-// const waitForCookie = async (
-//   cookieName: string,
-//   retries = 3,
-//   delayMs = 100
-// ): Promise<string | undefined> => {
-//   for (let i = 0; i < retries; i++) {
-//     console.log(`⏳ Waiting for cookie...${retries}`);
-//     const value = getCookie(cookieName);
-//     if (value) return value;
-//     await new Promise((res) => setTimeout(res, delayMs));
-//   }
-//   return undefined;
-// };
-
 export const setcsrfTokenAsRequestBody = async (): Promise<URLSearchParams> => {
   try {
     const token = await CsrfTokenManager.getToken();
-    // const tokenInCookie = await waitForCookie("g_csrf_token");
     const body = new URLSearchParams();
-
-    // if (!tokenInCookie) {
-    //   console.error("❌ Cookie 中找不到 g_csrf_token");
-    // } else if (token !== tokenInCookie) {
-    //   console.error("❌ Token 不一致");
-    //   console.log("token (from server):", token);
-    //   console.log("g_csrf_token (from cookie):", tokenInCookie);
-    // }
 
     body.append("g_csrf_token", token);
     return body;
   } catch (err) {
     console.error("❌ 無法設置 CSRF Token:", err);
-    return new URLSearchParams(); // 避免拋出錯誤影響後續邏輯
+    return new URLSearchParams();
   }
 };
