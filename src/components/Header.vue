@@ -39,15 +39,28 @@
       <button class="btn">查訂單</button>
       <button class="btn">追蹤清單</button>
       <button class="btn">折價券</button>
-      <button class="btn">購物車</button>
+      <router-link
+        to="/cart"
+        class="btn relative"
+        :aria-label="`購物車，當前有 ${cartItemsLength} 件商品`"
+      >
+        購物車
+        <span
+          v-if="cartItemsLength > 0"
+          class="badge badge-secondary absolute -top-2 -right-2"
+        >
+          {{ cartItemsLength }}
+        </span>
+      </router-link>
     </div>
   </header>
 </template>
 
 <script setup lang="ts">
+import { computed } from "vue";
 import { useLoginStore } from "../stores/userStore";
 import { useHealthStore } from "@/stores/healthStore";
-
+import { useCartStore } from "@/stores/cartStore";
 import { storeToRefs } from "pinia";
 import router from "@/router/index";
 import * as csrfHelper from "@/utils/csrfToken";
@@ -60,6 +73,10 @@ const loginStore = useLoginStore();
 const { islogined } = storeToRefs(loginStore);
 const healthStore = useHealthStore();
 const { healthStatus, needsChecking } = storeToRefs(healthStore);
+const cartStore = useCartStore();
+
+// 計算購物車商品數量
+const cartItemsLength = computed(() => cartStore.items.length);
 
 let healthCheckInterval: NodeJS.Timeout | null = null;
 

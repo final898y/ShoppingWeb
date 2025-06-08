@@ -30,7 +30,25 @@ const routes: RouteRecordRaw[] = [
     component: () => import("../views/MemberCenter.vue"),
     meta: { requiresAuth: true },
   },
-  // 可根據需求新增其他路由
+  {
+    path: "/product/:id",
+    name: "Product",
+    component: () => import("../views/Product.vue"),
+  },
+  {
+    path: "/cart",
+    name: "Cart",
+    component: () => import("../views/Cart.vue"),
+  },
+  {
+    path: "/404",
+    name: "NotFound",
+    component: () => import("../views/NotFound.vue"),
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    redirect: "/404",
+  },
 ];
 
 const router = createRouter({
