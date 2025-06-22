@@ -21,40 +21,14 @@
           >
             <p class="text-lg">此分類暫無商品</p>
           </div>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-            <div
+          <div
+            class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-4"
+          >
+            <ProductCard
               v-for="product in filteredProducts"
               :key="product.id"
-              class="card bg-primary shadow-xl"
-            >
-              <figure>
-                <img
-                  :src="product.image"
-                  :alt="product.name"
-                  class="w-full h-48 object-cover rounded-t-lg"
-                />
-              </figure>
-              <div class="card-body">
-                <h2 class="card-title">{{ product.name }}</h2>
-                <p class="text-medium">${{ product.price }}</p>
-                <div class="card-actions justify-end gap-2">
-                  <button
-                    class="btn btn-secondary"
-                    @click="addToCart(product)"
-                    :aria-label="`將 ${product.name} 加入購物車`"
-                  >
-                    加入購物車
-                  </button>
-                  <router-link
-                    :to="`/product/${product.id}`"
-                    class="btn btn-primary"
-                    :aria-label="`查看 ${product.name} 詳情`"
-                  >
-                    查看詳情
-                  </router-link>
-                </div>
-              </div>
-            </div>
+              :product="product"
+            />
           </div>
         </div>
       </main>
@@ -71,11 +45,10 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import Aside from "../components/Aside.vue";
-import { useCartStore } from "@/stores/cartStore";
+import ProductCard from "../components/ProductCard.vue";
 import { useProductStore } from "@/stores/productStore";
 
-// 初始化商店
-const cartStore = useCartStore();
+// 初始化 productStore
 const productStore = useProductStore();
 
 // 響應式獲取篩選後的商品
@@ -84,21 +57,4 @@ const filteredProducts = computed(() => {
   console.log("Filtered products:", products); // 調試日誌
   return products;
 });
-
-// 加入購物車功能
-const addToCart = (product: {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-}) => {
-  cartStore.addItem({
-    id: product.id,
-    name: product.name,
-    price: product.price,
-    quantity: 1,
-    image: product.image,
-  });
-  alert(`${product.name} 已加入購物車！`);
-};
 </script>

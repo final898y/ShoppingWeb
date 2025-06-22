@@ -41,6 +41,26 @@ const routes: RouteRecordRaw[] = [
     component: () => import("../views/Cart.vue"),
   },
   {
+    path: "/checkout",
+    name: "Checkout",
+    component: () => import("../views/Checkout.vue"),
+  },
+  {
+    path: "/order-confirm",
+    name: "OrderConfirm",
+    component: () => import("../views/OrderConfirm.vue"),
+  },
+  {
+    path: "/payment",
+    name: "Payment",
+    component: () => import("../views/Payment.vue"),
+  },
+  {
+    path: "/orders",
+    name: "Orders",
+    component: () => import("../views/Orders.vue"),
+  },
+  {
     path: "/404",
     name: "NotFound",
     component: () => import("../views/NotFound.vue"),

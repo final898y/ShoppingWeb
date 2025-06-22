@@ -36,7 +36,7 @@
       <router-link v-if="islogined" to="/membercenter" class="btn"
         >會員中心</router-link
       >
-      <button class="btn">查訂單</button>
+      <router-link to="/Orders" class="btn">訂單</router-link>
       <button class="btn">追蹤清單</button>
       <button class="btn">折價券</button>
       <router-link
