@@ -51,10 +51,10 @@
                 class="flex items-center gap-4 py-2 border-b border-base-200 last:border-b-0"
               >
                 <img
-                  :src="item.image || '/NoImage.png'"
+                  :src="item.image_url || '/NoImage.png'"
                   :alt="item.name"
                   class="w-16 h-16 object-cover rounded-lg"
-                  @error="item.image = '/NoImage.png'"
+                  @error="item.image_url = '/NoImage.png'"
                 />
                 <div class="flex-1">
                   <h4 class="text-sm font-medium">{{ item.name }}</h4>
@@ -101,7 +101,7 @@ interface Order {
     name: string;
     price: number;
     quantity: number;
-    image: string;
+    image_url: string;
   }[];
   totalPrice: number;
   formData: {

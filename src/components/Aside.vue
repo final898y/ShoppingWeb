@@ -5,7 +5,7 @@
       <li>
         <a
           class="md:text-lg py-2 cursor-pointer hover:text-primary"
-          @click="productStore.resetFilter()"
+          @click="onClickAll"
           :aria-label="'顯示所有商品'"
           :class="{
             'text-primary':
@@ -16,11 +16,11 @@
           所有商品
         </a>
       </li>
-      <li v-for="category in productStore.getCategories()" :key="category.id">
+      <li v-for="category in productStore.categories" :key="category.id">
         <details>
           <summary class="md:text-lg py-2 cursor-pointer">
             <a
-              @click="productStore.setFilter(category.id)"
+              @click.prevent="onClickCategory(category.id)"
               class="hover:text-primary"
               :aria-label="`篩選 ${category.name} 分類`"
               :class="{
@@ -33,20 +33,16 @@
             </a>
           </summary>
           <ul>
-            <li
-              v-for="subCategory in category.subCategories"
-              :key="subCategory.id"
-            >
+            <li v-for="sub in category.subCategories" :key="sub.id">
               <a
-                @click="productStore.setFilter(category.id, subCategory.id)"
+                @click.prevent="onClickSubCategory(category.id, sub.id)"
                 class="text-sm md:text-base text-dark py-1 pl-4 hover:text-primary"
-                :aria-label="`篩選 ${subCategory.name} 子分類`"
+                :aria-label="`篩選 ${sub.name} 子分類`"
                 :class="{
-                  'text-primary':
-                    productStore.selectedSubCategoryId === subCategory.id,
+                  'text-primary': productStore.selectedSubCategoryId === sub.id,
                 }"
               >
-                {{ subCategory.name }}
+                {{ sub.name }}
               </a>
             </li>
           </ul>
@@ -61,11 +57,19 @@ import { useProductStore } from "@/stores/productStore";
 
 const productStore = useProductStore();
 
-// 調試日誌：監聽篩選狀態變化
-productStore.$subscribe((mutation, state) => {
-  console.log("productStore state changed:", {
-    selectedCategoryId: state.selectedCategoryId,
-    selectedSubCategoryId: state.selectedSubCategoryId,
-  });
-});
+const onClickAll = async () => {
+  await productStore.resetFilter();
+  await productStore.fetchProducts();
+};
+
+const onClickCategory = async (categoryId: number) => {
+  await productStore.setFilter(categoryId);
+};
+
+const onClickSubCategory = async (
+  categoryId: number,
+  subCategoryId: number
+) => {
+  await productStore.setFilter(categoryId, subCategoryId);
+};
 </script>

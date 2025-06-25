@@ -23,10 +23,10 @@
               class="flex items-center gap-4 py-4 border-b border-base-200 last:border-b-0"
             >
               <img
-                :src="item.image || '/NoImage.png'"
+                :src="item.image_url || '/NoImage.png'"
                 :alt="item.name"
                 class="w-16 h-16 object-cover rounded-lg"
-                @error="item.image = '/NoImage.png'"
+                @error="item.image_url = '/NoImage.png'"
               />
               <div class="flex-1">
                 <h3 class="text-base font-medium">{{ item.name }}</h3>

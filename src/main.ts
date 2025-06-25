@@ -15,7 +15,6 @@ const loginStore = useLoginStore();
 const productStore = useProductStore();
 const cartStore = useCartStore();
 loginStore.loadFromLocalStorage();
-productStore.loadFromLocalStorage();
 cartStore.loadFromLocalStorage();
 
 app.use(router);

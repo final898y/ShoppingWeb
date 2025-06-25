@@ -6,7 +6,7 @@ interface CartItem {
   name: string;
   price: number;
   quantity: number;
-  image: string;
+  image_url: string;
 }
 
 // 定義購物車狀態的介面

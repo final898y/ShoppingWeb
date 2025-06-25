@@ -54,7 +54,7 @@ interface Product {
   price: number;
   description: string;
   stock: number;
-  image: string;
+  image_url: string;
   categoryId: number;
   subCategoryId: number;
 }
@@ -67,7 +67,7 @@ const product = props.product;
 const cartStore = useCartStore();
 
 // 處理圖片錯誤 fallback
-const imageSrc = ref(product.image || "/NoImage.png");
+const imageSrc = ref(product.image_url || "/NoImage.png");
 const onImageError = () => {
   imageSrc.value = "/NoImage.png";
 };
@@ -89,13 +89,13 @@ const toastMessage = ref("");
 
 // 加入購物車
 const addToCart = () => {
-  const { id, name, price, image } = product;
+  const { id, name, price, image_url } = product;
   cartStore.addItem({
     id,
     name,
     price,
     quantity: 1,
-    image,
+    image_url,
   });
   toastMessage.value = `${name} 已加入購物車！`;
   showToast.value = true;
