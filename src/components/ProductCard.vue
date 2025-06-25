@@ -7,22 +7,28 @@
   </div>
 
   <div
-    class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow rounded-lg p-3"
+    class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow rounded-lg p-3 min-h-[420px]"
   >
-    <figure
-      class="aspect-square overflow-hidden rounded-lg max-w-60 mx-auto bg-base-200"
-    >
-      <img
-        :src="imageSrc"
-        :alt="`${product.name} 商品圖片`"
-        class="w-60 h-60 object-contain object-center"
-        loading="lazy"
-        @error="onImageError"
-      />
-    </figure>
+    <!-- 商品圖片區 -->
+    <router-link :to="`/product/${product.id}`">
+      <figure
+        class="h-72 md:h-80 overflow-hidden rounded-lg bg-base-200 flex justify-center items-center"
+      >
+        <img
+          :src="imageSrc"
+          :alt="`${product.name} 商品圖片`"
+          class="max-h-full max-w-full object-contain transition-transform duration-300 hover:scale-105"
+          loading="lazy"
+          @error="onImageError"
+        />
+      </figure>
+    </router-link>
+
+    <!-- 商品內容區 -->
     <div class="card-body p-3 text-center">
       <h2 class="card-title text-base font-semibold">{{ product.name }}</h2>
       <p class="text-medium text-primary font-bold">{{ formattedPrice }}</p>
+
       <div class="card-actions flex justify-center gap-2 mt-3">
         <button
           class="btn btn-secondary btn-sm"
@@ -47,7 +53,7 @@
 import { ref, computed } from "vue";
 import { useCartStore } from "@/stores/cartStore";
 
-// 定義 Product 類型
+// 定義 props 與類型
 interface Product {
   id: number;
   name: string;
@@ -58,32 +64,30 @@ interface Product {
   categoryId: number;
   subCategoryId: number;
 }
-
-// 正確的 props 定義
 const props = defineProps<{ product: Product }>();
 const product = props.product;
 
-// 初始化 cartStore
+// 購物車 store
 const cartStore = useCartStore();
 
-// 處理圖片錯誤 fallback
+// 圖片錯誤備援
 const imageSrc = ref(product.image_url || "/NoImage.png");
 const onImageError = () => {
   imageSrc.value = "/NoImage.png";
 };
 
-// 貨幣格式化
+// 貨幣格式
 const currency = "USD";
-const formattedPrice = computed(() => {
-  return new Intl.NumberFormat("en-US", {
+const formattedPrice = computed(() =>
+  new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: currency,
+    currency,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
-  }).format(product.price);
-});
+  }).format(product.price)
+);
 
-// Toast 控制
+// Toast 訊息
 const showToast = ref(false);
 const toastMessage = ref("");
 

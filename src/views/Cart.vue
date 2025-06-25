@@ -9,6 +9,8 @@
   <div class="min-h-[calc(100vh-16rem)] p-6 bg-base-100">
     <div class="container mx-auto max-w-4xl">
       <h1 class="text-2xl font-bold mb-6">購物車</h1>
+
+      <!-- 空購物車 -->
       <div
         v-if="cartStore.items.length === 0"
         class="text-center text-base-content/80"
@@ -16,27 +18,47 @@
         <p class="text-lg">您的購物車是空的，快去選購商品吧！</p>
         <router-link to="/" class="btn btn-primary mt-4">返回首頁</router-link>
       </div>
+
+      <!-- 商品列表 -->
       <div v-else>
         <div class="card bg-base-100 shadow-xl border border-base-300 mb-6">
           <div class="card-body">
             <div
               v-for="item in cartStore.items"
               :key="item.id"
-              class="flex items-center gap-4 py-4 border-b border-base-200"
+              class="flex items-center gap-4 py-4 border-b border-base-200 hover:shadow-lg transition-shadow duration-300"
             >
-              <img
-                :src="item.image_url || '/NoImage.png'"
-                :alt="item.name"
-                class="w-24 h-24 object-cover rounded-lg"
-                @error="item.image_url = '/NoImage.png'"
-              />
+              <!-- 商品圖片，點擊可進入詳情頁 -->
+              <router-link :to="`/product/${item.id}`">
+                <figure
+                  class="w-24 h-24 overflow-hidden rounded-lg bg-base-200 flex justify-center items-center"
+                >
+                  <img
+                    :src="item.image_url || '/NoImage.png'"
+                    :alt="`${item.name} 商品圖片`"
+                    class="max-h-full max-w-full object-contain transition-transform duration-300 hover:scale-105"
+                    loading="lazy"
+                    @error="item.image_url = '/NoImage.png'"
+                  />
+                </figure>
+              </router-link>
+
+              <!-- 商品資訊 -->
               <div class="flex-1">
-                <h2 class="text-lg font-semibold">{{ item.name }}</h2>
+                <!-- 商品名稱，點擊可進入詳情頁 -->
+                <router-link
+                  :to="`/product/${item.id}`"
+                  class="text-lg font-semibold hover:text-primary transition-colors"
+                >
+                  {{ item.name }}
+                </router-link>
                 <p class="text-base">單價：${{ item.price }}</p>
                 <p class="text-base">
                   小計：${{ (item.price * item.quantity).toFixed(2) }}
                 </p>
               </div>
+
+              <!-- 數量與移除按鈕 -->
               <div class="flex items-center gap-2">
                 <label :for="'quantity-' + item.id" class="text-base"
                   >數量：</label
@@ -60,6 +82,8 @@
             </div>
           </div>
         </div>
+
+        <!-- 總金額與操作 -->
         <div class="flex justify-between items-center gap-4">
           <p class="text-lg font-bold">
             總金額：${{ cartStore.totalPrice.toFixed(2) }}
@@ -77,15 +101,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useCartStore } from "@/stores/cartStore";
 import { useProductStore } from "@/stores/productStore";
 
-// 初始化商店
 const cartStore = useCartStore();
 const productStore = useProductStore();
 
-// Toast 控制
 const showToast = ref(false);
 const toastConfig = ref({
   message: "",
@@ -93,7 +115,7 @@ const toastConfig = ref({
   textClass: "text-success-content",
 });
 
-// 顯示 Toast
+// 顯示 toast 通知
 const displayToast = (
   message: string,
   type: "success" | "warning" = "success"
@@ -105,22 +127,33 @@ const displayToast = (
       type === "success" ? "text-success-content" : "text-warning-content",
   };
   showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 3000);
+  setTimeout(() => (showToast.value = false), 3000);
 };
 
-// 獲取商品庫存
+// 使用 Map 緩存取得的商品資料
+const productStockMap = new Map<number, number>();
+
+// 根據商品 ID 取得庫存（若尚未載入則 fetch）
 const getStock = (id: number) => {
-  const product = productStore.getProductById(id);
-  return product ? product.stock : 1;
+  return productStockMap.get(id) ?? 1; // 若無庫存資料，預設為 1
 };
 
-// 更新數量
+// 初始時嘗試載入所有購物車商品的庫存
+onMounted(async () => {
+  for (const item of cartStore.items) {
+    const product = await productStore.fetchProductById(item.id);
+    if (product) {
+      productStockMap.set(item.id, product.stock);
+    }
+  }
+});
+
+// 數量更新邏輯
 const updateQuantity = (item: { id: number; quantity: number }) => {
   const stock = getStock(item.id);
   if (item.quantity <= 0) {
     item.quantity = 1;
+    displayToast("數量不得小於 1", "warning");
   } else if (item.quantity > stock) {
     item.quantity = stock;
     displayToast(`庫存僅剩 ${stock} 件`, "warning");

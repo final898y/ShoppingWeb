@@ -14,19 +14,40 @@
       <div class="card bg-base-100 shadow-xl border border-base-300 mb-6">
         <div class="card-body">
           <h2 class="text-lg font-semibold mb-4">訂單商品</h2>
+
           <div
             v-for="item in cartStore.items"
             :key="item.id"
-            class="flex items-center gap-4 py-4 border-b border-base-200 last:border-b-0"
+            class="flex items-center gap-4 py-4 border-b border-base-200 last:border-b-0 hover:shadow-lg transition-shadow duration-300"
           >
-            <img
-              :src="item.image_url || '/NoImage.png'"
-              :alt="item.name"
-              class="w-16 h-16 object-cover rounded-lg"
-              @error="item.image_url = '/NoImage.png'"
-            />
+            <!-- 商品圖片，點擊可進入詳情頁 -->
+            <router-link
+              :to="`/product/${item.id}`"
+              :aria-label="`查看 ${item.name} 詳情`"
+            >
+              <figure
+                class="w-24 h-24 overflow-hidden rounded-lg bg-base-200 flex justify-center items-center"
+              >
+                <img
+                  :src="item.image_url || '/NoImage.png'"
+                  :alt="`${item.name} 商品圖片`"
+                  class="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-105"
+                  loading="lazy"
+                  @error="item.image_url = '/NoImage.png'"
+                />
+              </figure>
+            </router-link>
+
+            <!-- 商品資訊 -->
             <div class="flex-1">
-              <h3 class="text-base font-medium">{{ item.name }}</h3>
+              <!-- 商品名稱，點擊可進入詳情頁 -->
+              <router-link
+                :to="`/product/${item.id}`"
+                class="text-base font-medium hover:text-primary transition-colors"
+                :aria-label="`查看 ${item.name} 詳情`"
+              >
+                {{ item.name }}
+              </router-link>
               <p class="text-sm">單價：${{ item.price }}</p>
               <p class="text-sm">數量：{{ item.quantity }}</p>
               <p class="text-sm font-bold">
@@ -34,6 +55,7 @@
               </p>
             </div>
           </div>
+
           <div class="text-right mt-4">
             <p class="text-lg font-bold">
               總金額：${{ cartStore.totalPrice.toFixed(2) }}
@@ -49,9 +71,9 @@
           <div class="grid gap-4">
             <div class="form-control">
               <label class="label">
-                <span class="label-text"
-                  >收件人姓名 <span class="text-error">*</span></span
-                >
+                <span class="label-text">
+                  收件人姓名 <span class="text-error">*</span>
+                </span>
               </label>
               <input
                 ref="nameInput"
@@ -68,9 +90,9 @@
 
             <div class="form-control">
               <label class="label">
-                <span class="label-text"
-                  >聯繫電話 <span class="text-error">*</span></span
-                >
+                <span class="label-text">
+                  聯繫電話 <span class="text-error">*</span>
+                </span>
               </label>
               <input
                 type="tel"
@@ -86,9 +108,9 @@
 
             <div class="form-control">
               <label class="label">
-                <span class="label-text"
-                  >收件地址 <span class="text-error">*</span></span
-                >
+                <span class="label-text">
+                  收件地址 <span class="text-error">*</span>
+                </span>
               </label>
               <input
                 type="text"
@@ -104,9 +126,9 @@
 
             <div class="form-control">
               <label class="label">
-                <span class="label-text"
-                  >電子郵件 <span class="text-error">*</span></span
-                >
+                <span class="label-text">
+                  電子郵件 <span class="text-error">*</span>
+                </span>
               </label>
               <input
                 type="email"
@@ -166,11 +188,7 @@ const formData = reactive({
 onMounted(() => {
   orderStore.loadFromStorage();
   Object.assign(formData, orderStore.formData);
-
-  // 等待畫面渲染完再聚焦
-  nextTick(() => {
-    nameInput.value?.focus();
-  });
+  nextTick(() => nameInput.value?.focus());
 });
 
 const errors = reactive({
@@ -219,8 +237,7 @@ const confirmOrder = () => {
   orderStore.formData = JSON.parse(JSON.stringify(formData));
   orderStore.cartItems = JSON.parse(JSON.stringify(cartStore.items));
   orderStore.totalPrice = cartStore.totalPrice;
-  //orderStore.saveToStorage();
 
-  router.push("/order-confirm");
+  router.push("/checkoutconfirm");
 };
 </script>

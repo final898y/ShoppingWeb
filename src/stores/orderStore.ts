@@ -33,7 +33,7 @@ export const useOrderStore = defineStore("order", () => {
 
   // 初始化資料
   const loadFromStorage = () => {
-    const saved = localStorage.getItem("order-data");
+    const saved = localStorage.getItem("orderingdata");
     if (saved) {
       const parsed = JSON.parse(saved);
       formData.value = parsed.formData;
@@ -47,7 +47,7 @@ export const useOrderStore = defineStore("order", () => {
       cartItems: cartItems.value,
       totalPrice: totalPrice.value,
     };
-    localStorage.setItem("order-data", JSON.stringify(data));
+    localStorage.setItem("orderingdata", JSON.stringify(data));
   };
 
   // 自動儲存資料
@@ -55,7 +55,7 @@ export const useOrderStore = defineStore("order", () => {
     [formData, cartItems, totalPrice],
     () => {
       localStorage.setItem(
-        "order-data",
+        "orderingdata",
         JSON.stringify({
           formData: formData.value,
           cartItems: cartItems.value,

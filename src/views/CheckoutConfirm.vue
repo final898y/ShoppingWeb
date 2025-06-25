@@ -1,16 +1,8 @@
 <template>
-  <!-- Toast 通知 -->
-  <div class="toast toast-top toast-end" v-if="showToast">
-    <div class="alert" :class="[toastConfig.bgClass, toastConfig.textClass]">
-      <span>{{ toastConfig.message }}</span>
-    </div>
-  </div>
-
   <div class="min-h-[calc(100vh-16rem)] p-6 bg-base-100">
     <div class="container mx-auto max-w-4xl">
-      <h1 class="text-2xl font-bold mb-6">付款</h1>
+      <h1 class="text-2xl font-bold mb-6">訂單確認</h1>
 
-      <!-- 無有效資料提示 -->
       <div v-if="!isValidOrder" class="text-center text-base-content/80">
         <p class="text-lg">無訂單資料，請重新填寫</p>
         <router-link to="/checkout" class="btn btn-primary mt-4"
@@ -18,9 +10,7 @@
         >
       </div>
 
-      <!-- 付款頁面 -->
       <div v-else>
-        <!-- 商品清單 -->
         <div class="card bg-base-100 shadow-xl border border-base-300 mb-6">
           <div class="card-body">
             <h2 class="text-lg font-semibold mb-4">訂單商品</h2>
@@ -72,25 +62,30 @@
           </div>
         </div>
 
-        <!-- 付款資訊 -->
         <div class="card bg-base-100 shadow-xl border border-base-300">
           <div class="card-body">
-            <h2 class="text-lg font-semibold mb-4">付款資訊</h2>
-            <p class="text-base">訂單總金額：${{ totalPrice.toFixed(2) }}</p>
-            <p class="text-sm text-base-content/80 mt-2">
-              這是模擬付款頁面，點擊下方按鈕完成付款。
+            <h2 class="text-lg font-semibold mb-4">收件人資訊</h2>
+            <p class="text-sm">姓名：{{ formData.name }}</p>
+            <p class="text-sm">電話：{{ formData.phone }}</p>
+            <p class="text-sm">地址：{{ formData.address }}</p>
+            <p class="text-sm">電子郵件：{{ formData.email }}</p>
+            <p class="text-sm" v-if="formData.notes">
+              備註：{{ formData.notes }}
             </p>
-            <div class="card-actions justify-end mt-6">
-              <button
-                class="btn btn-primary"
-                :disabled="isProcessing"
-                @click="processPayment"
-                :aria-label="isProcessing ? '正在處理付款' : '模擬付款'"
-              >
-                {{ isProcessing ? "處理中..." : "模擬付款" }}
-              </button>
-            </div>
           </div>
+        </div>
+
+        <div class="flex justify-between mt-6">
+          <router-link to="/checkout" class="btn btn-outline"
+            >返回編輯</router-link
+          >
+          <button
+            class="btn btn-primary"
+            @click="proceedToPayment"
+            :disabled="isProcessing"
+          >
+            {{ isProcessing ? "處理中..." : "進入付款" }}
+          </button>
         </div>
       </div>
     </div>
@@ -100,44 +95,20 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useCartStore } from "@/stores/cartStore";
 import { useOrderStore } from "@/stores/orderStore";
 
-// 初始化
 const router = useRouter();
-const cartStore = useCartStore();
 const orderStore = useOrderStore();
 const isProcessing = ref(false);
 
-// Toast 控制
-const showToast = ref(false);
-const toastConfig = ref({
-  message: "",
-  bgClass: "bg-warning",
-  textClass: "text-warning-content",
+// 在頁面加載時嘗試從 localStorage 恢復資料
+onMounted(() => {
+  orderStore.loadFromStorage();
+  // 若資料無效，自動導回訂單填寫頁面
+  if (!isValidOrder.value) {
+    router.push("/checkout");
+  }
 });
-
-// 顯示 Toast
-const displayToast = (
-  message: string,
-  type: "success" | "warning" = "warning"
-) => {
-  toastConfig.value = {
-    message,
-    bgClass: type === "success" ? "bg-success" : "bg-warning",
-    textClass:
-      type === "success" ? "text-success-content" : "text-warning-content",
-  };
-  showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 3000);
-};
-
-// 從 orderStore 獲取資料
-const formData = computed(() => orderStore.formData);
-const cartItems = computed(() => orderStore.cartItems);
-const totalPrice = computed(() => orderStore.totalPrice);
 
 // 檢查訂單資料是否有效
 const isValidOrder = computed(() => {
@@ -151,51 +122,21 @@ const isValidOrder = computed(() => {
   );
 });
 
-// 頁面載入時從 localStorage 恢復資料
-onMounted(() => {
-  orderStore.loadFromStorage();
-  if (!isValidOrder.value) {
-    displayToast("無有效的訂單資料，請重新填寫");
-    setTimeout(() => router.push("/checkout"), 3000);
-  }
-});
+// 從 orderStore 獲取資料
+const formData = computed(() => orderStore.formData);
+const cartItems = computed(() => orderStore.cartItems);
+const totalPrice = computed(() => orderStore.totalPrice);
 
-// 模擬付款
-const processPayment = async () => {
+// 進入付款頁面
+const proceedToPayment = async () => {
   if (isProcessing.value) return;
   isProcessing.value = true;
-
   try {
-    // 模擬付款處理（2秒延遲）
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // 生成訂單
-    const order = {
-      id: Date.now(),
-      items: cartItems.value,
-      totalPrice: totalPrice.value,
-      formData: formData.value,
-      createdAt: new Date().toISOString(),
-    };
-
-    // 儲存訂單至 localStorage
-    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-    orders.push(order);
-    localStorage.setItem("orders", JSON.stringify(orders));
-
-    // 清空購物車和訂單資料
-    cartStore.clearCart();
-    orderStore.clearOrder();
-
-    // 顯示成功提示並導航回首頁
-    displayToast("付款成功，訂單已提交！", "success");
-    setTimeout(() => {
-      router.push("/");
-      isProcessing.value = false;
-    }, 3000);
+    // 模擬付款流程（可替換為實際 API 呼叫）
+    await router.push("/payment");
   } catch (error) {
-    console.error("付款處理失敗：", error);
-    displayToast("付款失敗，請稍後重試");
+    console.error("導向付款頁面失敗：", error);
+  } finally {
     isProcessing.value = false;
   }
 };
