@@ -41,31 +41,31 @@
 
           <!-- 分頁 -->
           <div v-if="totalPages > 1" class="flex justify-center mt-8">
-            <ul class="pagination">
-              <li :class="{ disabled: productStore.currentPage === 1 }">
-                <a
-                  href="#"
-                  @click.prevent="goToPage(productStore.currentPage - 1)"
-                  >«</a
-                >
-              </li>
-              <li
+            <div class="join">
+              <button
+                class="join-item btn"
+                :class="{ 'btn-disabled': productStore.currentPage === 1 }"
+                @click.prevent="goToPage(productStore.currentPage - 1)"
+              >
+                «
+              </button>
+              <button
                 v-for="page in visiblePages"
                 :key="page"
-                :class="{ active: productStore.currentPage === page }"
+                class="join-item btn"
+                :class="{ 'btn-active': productStore.currentPage === page }"
+                @click.prevent="goToPage(page)"
               >
-                <a href="#" @click.prevent="goToPage(page)">{{ page }}</a>
-              </li>
-              <li
-                :class="{ disabled: productStore.currentPage === totalPages }"
+                {{ page }}
+              </button>
+              <button
+                class="join-item btn"
+                :class="{ 'btn-disabled': productStore.currentPage === totalPages }"
+                @click.prevent="goToPage(productStore.currentPage + 1)"
               >
-                <a
-                  href="#"
-                  @click.prevent="goToPage(productStore.currentPage + 1)"
-                  >»</a
-                >
-              </li>
-            </ul>
+                »
+              </button>
+            </div>
           </div>
         </div>
       </main>
