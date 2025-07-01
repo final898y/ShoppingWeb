@@ -168,8 +168,9 @@ const removeItem = (id: number) => {
 };
 
 // 清空購物車
-const clearCart = () => {
-  cartStore.clearCart();
-  displayToast("購物車已清空！", "success");
+const clearCart = async () => {
+  const userUuid = "19de471a-2391-4205-baa9-774a691ca256"; // TODO: 從認證 store 動態取得
+  const result = await cartStore.clearCart(userUuid);
+  displayToast(result.message, result.success ? "success" : "warning");
 };
 </script>

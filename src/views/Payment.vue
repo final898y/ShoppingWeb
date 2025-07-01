@@ -184,7 +184,7 @@ const processPayment = async () => {
     localStorage.setItem("orders", JSON.stringify(orders));
 
     // 清空購物車和訂單資料
-    cartStore.clearCart();
+    cartStore.clearCart("19de471a-2391-4205-baa9-774a691ca256"); //TODO: 從認證 store 動態取得
     orderStore.clearOrder();
 
     // 顯示成功提示並導航回首頁
