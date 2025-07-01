@@ -43,7 +43,7 @@
                 </figure>
               </router-link>
 
-              <!-- 商品資訊 -->
+              <!-- 商品資訊 TODO：目前在別的頁面加入購物車不會自動更新 -->
               <div class="flex-1">
                 <!-- 商品名稱，點擊可進入詳情頁 -->
                 <router-link
@@ -98,10 +98,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive } from "vue";
+import { ref, onMounted, reactive, isRef } from "vue";
+import { storeToRefs } from "pinia";
+
 import { useCartStore } from "@/stores/cartStore";
 import { useProductStore } from "@/stores/productStore";
 import { debounce } from "@/utils/debounce";
+import { useStockCache } from "@/composables/useStockCache";
 
 interface CartItem {
   id: number;
@@ -113,6 +116,8 @@ interface CartItem {
 
 const cartStore = useCartStore();
 const productStore = useProductStore();
+const { getStock, fetchStock, preloadStocks, watchAndFill } =
+  useStockCache(productStore);
 
 const showToast = ref(false);
 const toastConfig = ref({
@@ -137,41 +142,15 @@ const displayToast = (
 };
 
 // ======== 庫存處理區 ========
-
-const productStockMap = reactive(new Map<number, number>());
-const debouncedFetchStockMap = new Map<number, () => void>();
-
-const getStock = (id: number): number => productStockMap.get(id) ?? 0;
-
-const fetchStockWithDebounce = (id: number): Promise<number> => {
-  return new Promise((resolve) => {
-    if (productStockMap.has(id)) {
-      resolve(productStockMap.get(id)!);
-      return;
-    }
-    if (!debouncedFetchStockMap.has(id)) {
-      const fn = debounce(async () => {
-        const product = await productStore.fetchProductById(id);
-        const stock = product?.stock ?? 0;
-        productStockMap.set(id, stock);
-        resolve(stock);
-      }, 300);
-      debouncedFetchStockMap.set(id, fn);
-    }
-    debouncedFetchStockMap.get(id)!();
-  });
-};
-
-// 預載所有庫存
-onMounted(async () => {
-  const promises = cartStore.items.map((item) =>
-    fetchStockWithDebounce(item.id).then((stock) =>
-      productStockMap.set(item.id, stock)
-    )
-  );
-  await Promise.all(promises);
+// 頁面載入時預先快取購物車中商品的庫存
+onMounted(() => {
+  const ids = cartStore.items.map((item) => item.id);
+  preloadStocks(ids);
 });
 
+// 監聽購物車 items 變化，自動補快取庫存，TODO：待釐清cartStore.items是否為ref
+const { items } = storeToRefs(cartStore);
+watchAndFill(items);
 // 建立防抖函式：延遲觸發更新後端
 const debouncedUpdate = debounce(async (item: CartItem) => {
   const result = await cartStore.updateItemQuantity(item.id, item.quantity);
@@ -180,7 +159,7 @@ const debouncedUpdate = debounce(async (item: CartItem) => {
 
 // 數量更新邏輯
 const updateQuantity = async (item: CartItem) => {
-  const stock = await fetchStockWithDebounce(item.id); // 使用非同步版本檢查庫存
+  const stock = await fetchStock(item.id);
   if (item.quantity <= 0) {
     item.quantity = 1;
     displayToast("數量不得小於 1", "warning");

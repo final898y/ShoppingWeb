@@ -101,3 +101,4 @@ export const useProductStore = defineStore("product", () => {
     setPage,
   };
 });
+export type ProductStoreType = ReturnType<typeof useProductStore>;
