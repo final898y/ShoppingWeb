@@ -72,10 +72,7 @@
                   class="input input-bordered w-20"
                   @change="updateQuantity(item)"
                 />
-                <button
-                  class="btn btn-error btn-sm"
-                  @click="removeItem(item.id)"
-                >
+                <button class="btn btn-error btn-sm" @click="removeItem(item)">
                   移除
                 </button>
               </div>
@@ -101,9 +98,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, onMounted, reactive } from "vue";
 import { useCartStore } from "@/stores/cartStore";
 import { useProductStore } from "@/stores/productStore";
+import { debounce } from "@/utils/debounce";
+
+interface CartItem {
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  image_url: string;
+}
 
 const cartStore = useCartStore();
 const productStore = useProductStore();
@@ -130,27 +136,51 @@ const displayToast = (
   setTimeout(() => (showToast.value = false), 3000);
 };
 
-// 使用 Map 緩存取得的商品資料
-const productStockMap = new Map<number, number>();
+// ======== 庫存處理區 ========
 
-// 根據商品 ID 取得庫存（若尚未載入則 fetch）
-const getStock = (id: number) => {
-  return productStockMap.get(id) ?? 1; // 若無庫存資料，預設為 1
+const productStockMap = reactive(new Map<number, number>());
+const debouncedFetchStockMap = new Map<number, () => void>();
+
+const getStock = (id: number): number => productStockMap.get(id) ?? 0;
+
+const fetchStockWithDebounce = (id: number): Promise<number> => {
+  return new Promise((resolve) => {
+    if (productStockMap.has(id)) {
+      resolve(productStockMap.get(id)!);
+      return;
+    }
+    if (!debouncedFetchStockMap.has(id)) {
+      const fn = debounce(async () => {
+        const product = await productStore.fetchProductById(id);
+        const stock = product?.stock ?? 0;
+        productStockMap.set(id, stock);
+        resolve(stock);
+      }, 300);
+      debouncedFetchStockMap.set(id, fn);
+    }
+    debouncedFetchStockMap.get(id)!();
+  });
 };
 
-// 初始時嘗試載入所有購物車商品的庫存
+// 預載所有庫存
 onMounted(async () => {
-  for (const item of cartStore.items) {
-    const product = await productStore.fetchProductById(item.id);
-    if (product) {
-      productStockMap.set(item.id, product.stock);
-    }
-  }
+  const promises = cartStore.items.map((item) =>
+    fetchStockWithDebounce(item.id).then((stock) =>
+      productStockMap.set(item.id, stock)
+    )
+  );
+  await Promise.all(promises);
 });
 
+// 建立防抖函式：延遲觸發更新後端
+const debouncedUpdate = debounce(async (item: CartItem) => {
+  const result = await cartStore.updateItemQuantity(item.id, item.quantity);
+  displayToast(result.message, result.success ? "success" : "warning");
+}, 500);
+
 // 數量更新邏輯
-const updateQuantity = (item: { id: number; quantity: number }) => {
-  const stock = getStock(item.id);
+const updateQuantity = async (item: CartItem) => {
+  const stock = await fetchStockWithDebounce(item.id); // 使用非同步版本檢查庫存
   if (item.quantity <= 0) {
     item.quantity = 1;
     displayToast("數量不得小於 1", "warning");
@@ -158,13 +188,13 @@ const updateQuantity = (item: { id: number; quantity: number }) => {
     item.quantity = stock;
     displayToast(`庫存僅剩 ${stock} 件`, "warning");
   }
-  cartStore.saveToLocalStorage();
+  debouncedUpdate(item); // 使用防抖更新
 };
 
 // 移除商品
-const removeItem = (id: number) => {
-  cartStore.removeItem(id);
-  displayToast("商品已從購物車移除！", "success");
+const removeItem = async (item: CartItem) => {
+  const result = await cartStore.removeItem(item);
+  displayToast(result.message, result.success ? "success" : "warning");
 };
 
 // 清空購物車

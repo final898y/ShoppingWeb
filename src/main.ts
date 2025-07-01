@@ -9,6 +9,7 @@ import { useCartStore } from "@/stores/cartStore";
 
 const pinia = createPinia();
 const app = createApp(App);
+app.use(pinia);
 
 async function initApp() {
   const loginStore = useLoginStore();

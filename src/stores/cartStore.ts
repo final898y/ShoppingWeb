@@ -96,13 +96,48 @@ export const useCartStore = defineStore("cart", {
         console.error("無法載入購物車：", error);
       }
     },
-
-    // 移除商品
-    async removeItem(id: number): Promise<ClearCartResult> {
+    async updateItemQuantity(productId: number, quantity: number) {
       try {
-        const response = await axios.delete(`/carts/${id}`);
+        const userUuid = "19de471a-2391-4205-baa9-774a691ca256";
+        // 送出更新請求
+        const response = await axios.put("/carts/updateCartItem", {
+          userUuid,
+          productId,
+          quantity,
+        });
+
+        // 若成功，更新本地購物車資料
         if (response.data.success) {
-          this.items = this.items.filter((item) => item.id !== id);
+          const item = this.items.find((i) => i.id === productId);
+          if (item) {
+            item.quantity = quantity;
+          }
+        }
+
+        return response.data; // 包含 success、message 等資訊
+      } catch (error) {
+        console.error("更新購物車項目失敗：", error);
+        return {
+          success: false,
+          message: "更新失敗，請稍後再試",
+        };
+      }
+    },
+    // 移除商品
+    async removeItem(item: CartItem): Promise<ClearCartResult> {
+      try {
+        const productId = item.id;
+        const userUuid = "19de471a-2391-4205-baa9-774a691ca256"; // TODO: 應從認證 store 動態取得
+
+        const response = await axios.delete(
+          `/carts/deleteCartItem/${productId}`,
+          {
+            params: { userUuid },
+          }
+        );
+
+        if (response.data.success) {
+          this.items = this.items.filter((i) => i.id !== item.id);
           this.saveToLocalStorage();
           return { success: true, message: "商品已從購物車移除！" };
         } else {
