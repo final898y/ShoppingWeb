@@ -142,13 +142,13 @@ const displayToast = (
 };
 
 // ======== 庫存處理區 ========
-// 頁面載入時預先快取購物車中商品的庫存
-onMounted(() => {
-  const ids = cartStore.items.map((item) => item.id);
-  preloadStocks(ids);
-});
+// 頁面載入時預先快取購物車中商品的庫存，此處不需要，跟watchAndFill功能重複
+// onMounted(() => {
+//   const ids = cartStore.items.map((item) => item.id);
+//   preloadStocks(ids);
+// });
 
-// 監聽購物車 items 變化，自動補快取庫存，TODO：待釐清cartStore.items是否為ref
+// 監聽購物車 items 變化，自動補快取庫存
 const { items } = storeToRefs(cartStore);
 watchAndFill(items);
 // 建立防抖函式：延遲觸發更新後端
