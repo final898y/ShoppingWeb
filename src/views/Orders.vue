@@ -1,11 +1,4 @@
 <template>
-  <!-- Toast 通知 -->
-  <div class="toast toast-top toast-end" v-if="showToast">
-    <div class="alert" :class="[toastConfig.bgClass, toastConfig.textClass]">
-      <span>{{ toastConfig.message }}</span>
-    </div>
-  </div>
-
   <div class="min-h-[calc(100vh-16rem)] p-6 bg-base-100">
     <div class="container mx-auto max-w-4xl">
       <h1 class="text-2xl font-bold mb-6">訂單歷史</h1>
@@ -20,7 +13,7 @@
       <div v-else class="space-y-6">
         <div
           v-for="order in orders"
-          :key="order.id"
+          :key="order.number"
           class="card bg-base-100 shadow-xl border border-base-300"
         >
           <div class="card-body">
@@ -29,14 +22,14 @@
               class="flex flex-col sm:flex-row justify-start sm:justify-between items-start sm:items-center mb-4 gap-2 sm:gap-4"
             >
               <h2 class="text-lg font-semibold break-words">
-                訂單 ID: {{ order.id }}
+                訂單 ID: {{ order.number }}
               </h2>
               <p class="text-sm text-base-content/80 break-words">
                 訂單時間: {{ formatDate(order.createdAt) }}
               </p>
               <button
                 class="btn btn-error btn-sm self-end sm:ml-auto"
-                @click="cancelOrder(order.id)"
+                @click="cancelOrder(order.number)"
               >
                 取消訂單
               </button>
@@ -92,10 +85,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
+import { useToast } from "@/composables/useToast";
 
-// 訂單資料結構
 interface Order {
-  id: number;
+  number: number;
   items: {
     id: number;
     name: string;
@@ -114,35 +107,17 @@ interface Order {
   createdAt: string;
 }
 
-// Toast 控制
-const showToast = ref(false);
-const toastConfig = ref({
-  message: "",
-  bgClass: "bg-warning",
-  textClass: "text-warning-content",
-});
+const orders = ref<Order[]>([]);
 
-// 顯示 Toast
+const toast = useToast();
+
 const displayToast = (
   message: string,
   type: "success" | "warning" = "warning"
 ) => {
-  toastConfig.value = {
-    message,
-    bgClass: type === "success" ? "bg-success" : "bg-warning",
-    textClass:
-      type === "success" ? "text-success-content" : "text-warning-content",
-  };
-  showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 3000);
+  toast.showToast(message, type);
 };
 
-// 訂單資料
-const orders = ref<Order[]>([]);
-
-// 格式化日期
 const formatDate = (isoString: string) => {
   const date = new Date(isoString);
   return date.toLocaleString("zh-TW", {
@@ -156,7 +131,6 @@ const formatDate = (isoString: string) => {
   });
 };
 
-// 讀取訂單
 onMounted(() => {
   try {
     const storedOrders = JSON.parse(localStorage.getItem("orders") || "[]");
@@ -166,9 +140,8 @@ onMounted(() => {
   }
 });
 
-// 取消訂單
-const cancelOrder = (id: number) => {
-  orders.value = orders.value.filter((order) => order.id !== id);
+const cancelOrder = (number: number) => {
+  orders.value = orders.value.filter((order) => order.number !== number);
   localStorage.setItem("orders", JSON.stringify(orders.value));
   displayToast("訂單已取消", "success");
 };

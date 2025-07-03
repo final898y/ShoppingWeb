@@ -1,4 +1,5 @@
 <template>
+  <ToastMessage ref="toastRef" />
   <div class="min-h-screen flex flex-col">
     <Header class="bg-base-100 border-b-4 border-base-300 h-16" />
 
@@ -18,6 +19,17 @@
 </template>
 
 <script setup lang="ts">
+import { ref, provide } from "vue";
 import Header from "./components/Header.vue";
 import Footer from "./components/Footer.vue";
+import ToastMessage from "@/components/ToastMessage.vue";
+import { toastKey, ToastType } from "@/composables/useToast";
+
+const toastRef = ref<InstanceType<typeof ToastMessage>>();
+
+provide(toastKey, {
+  showToast: (message: string, type: ToastType = "success") => {
+    toastRef.value?.showToast({ message, type });
+  },
+});
 </script>

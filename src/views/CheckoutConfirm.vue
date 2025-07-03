@@ -132,10 +132,15 @@ const proceedToPayment = async () => {
   if (isProcessing.value) return;
   isProcessing.value = true;
   try {
-    // 模擬付款流程（可替換為實際 API 呼叫）
-    await router.push("/payment");
+    const orderNumber = await orderStore.createOrderFromCart();
+    if (orderNumber) {
+      router.push(`/payment?orderNumber=${orderNumber}`);
+    } else {
+      // 可以在此處添加更詳細的錯誤處理，例如顯示一個 toast 通知
+      console.error("訂單建立失敗，未返回訂單ID");
+    }
   } catch (error) {
-    console.error("導向付款頁面失敗：", error);
+    console.error("建立訂單或導向付款頁面失敗：", error);
   } finally {
     isProcessing.value = false;
   }

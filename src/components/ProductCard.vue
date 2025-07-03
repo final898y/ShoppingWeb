@@ -1,11 +1,4 @@
 <template>
-  <!-- Toast 通知 -->
-  <div class="toast toast-top toast-end" v-if="showToast">
-    <div class="alert bg-success text-success-content">
-      <span>{{ toastMessage }}</span>
-    </div>
-  </div>
-
   <div
     class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow rounded-lg p-3 min-h-[420px]"
   >
@@ -52,8 +45,9 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import { useCartStore } from "@/stores/cartStore";
+import { useToast } from "@/composables/useToast"; // ✅ 引入全域 Toast
 
-// 定義 props 與類型
+// 商品資料 props 定義
 interface Product {
   id: number;
   name: string;
@@ -64,36 +58,33 @@ interface Product {
   categoryId: number;
   subCategoryId: number;
 }
+
 const props = defineProps<{ product: Product }>();
 const product = props.product;
 
-// 購物車 store
 const cartStore = useCartStore();
+const { showToast } = useToast(); // ✅ 呼叫全域 toast
 
-// 圖片錯誤備援
+// 圖片備援處理
 const imageSrc = ref(product.image_url || "/NoImage.png");
 const onImageError = () => {
   imageSrc.value = "/NoImage.png";
 };
 
-// 貨幣格式
-const currency = "USD";
+// 價格格式化
 const formattedPrice = computed(() =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency,
+    currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(product.price)
 );
 
-// Toast 訊息
-const showToast = ref(false);
-const toastMessage = ref("");
-
-// 加入購物車
+// ✅ 點擊加入購物車
 const addToCart = () => {
   const { id, name, price, image_url } = product;
+
   cartStore.addItem({
     id,
     name,
@@ -101,10 +92,7 @@ const addToCart = () => {
     quantity: 1,
     image_url,
   });
-  toastMessage.value = `${name} 已加入購物車！`;
-  showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 1500);
+
+  showToast(`${name} 已加入購物車！`, "success");
 };
 </script>

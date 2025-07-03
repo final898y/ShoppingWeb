@@ -142,8 +142,6 @@ export const useCartStore = defineStore("cart", () => {
 
   async function clearCart(userUuid: string): Promise<ClearCartResult> {
     try {
-      z.string().uuid().parse(userUuid);
-
       const response = await axios.delete("/carts/clearCart", {
         params: { userUuid },
       });

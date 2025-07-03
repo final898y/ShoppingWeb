@@ -1,11 +1,4 @@
 <template>
-  <!-- Toast 通知 -->
-  <div class="toast toast-top toast-end" v-if="showToast">
-    <div class="alert" :class="[toastConfig.bgClass, toastConfig.textClass]">
-      <span>{{ toastConfig.message }}</span>
-    </div>
-  </div>
-
   <div class="min-h-[calc(100vh-16rem)] p-6 bg-base-100">
     <div class="container mx-auto max-w-4xl">
       <h1 class="text-2xl font-bold mb-6">購物車</h1>
@@ -28,7 +21,7 @@
               :key="item.id"
               class="flex items-center gap-4 py-4 border-b border-base-200 hover:shadow-lg transition-shadow duration-300"
             >
-              <!-- 商品圖片，點擊可進入詳情頁 -->
+              <!-- 商品圖片 -->
               <router-link :to="`/product/${item.id}`">
                 <figure
                   class="w-24 h-24 overflow-hidden rounded-lg bg-base-200 flex justify-center items-center"
@@ -43,9 +36,8 @@
                 </figure>
               </router-link>
 
-              <!-- 商品資訊 TODO：目前在別的頁面加入購物車不會自動更新 -->
+              <!-- 商品資訊 -->
               <div class="flex-1">
-                <!-- 商品名稱，點擊可進入詳情頁 -->
                 <router-link
                   :to="`/product/${item.id}`"
                   class="text-lg font-semibold hover:text-primary transition-colors"
@@ -58,7 +50,7 @@
                 </p>
               </div>
 
-              <!-- 數量與移除按鈕 -->
+              <!-- 數量與操作 -->
               <div class="flex items-center gap-2">
                 <label :for="'quantity-' + item.id" class="text-base"
                   >數量：</label
@@ -87,9 +79,9 @@
           </p>
           <div class="flex gap-2">
             <button class="btn btn-error" @click="clearCart">清空購物車</button>
-            <router-link to="/checkout" class="btn btn-primary"
-              >結帳</router-link
-            >
+            <button class="btn btn-primary" @click="proceedToCheckout">
+              結帳
+            </button>
           </div>
         </div>
       </div>
@@ -98,13 +90,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, reactive, isRef } from "vue";
 import { storeToRefs } from "pinia";
-
+import { useRouter } from "vue-router";
 import { useCartStore } from "@/stores/cartStore";
 import { useProductStore } from "@/stores/productStore";
+import { useOrderStore } from "@/stores/orderStore";
 import { debounce } from "@/utils/debounce";
 import { useStockCache } from "@/composables/useStockCache";
+import { useToast } from "@/composables/useToast"; // ✅ 使用全域 Toast
 
 interface CartItem {
   id: number;
@@ -116,70 +109,59 @@ interface CartItem {
 
 const cartStore = useCartStore();
 const productStore = useProductStore();
-const { getStock, fetchStock, preloadStocks, watchAndFill } =
-  useStockCache(productStore);
+const orderStore = useOrderStore();
+const router = useRouter();
+const { getStock, fetchStock, watchAndFill } = useStockCache(productStore);
 
-const showToast = ref(false);
-const toastConfig = ref({
-  message: "",
-  bgClass: "bg-success",
-  textClass: "text-success-content",
-});
+// ✅ 呼叫全域 Toast 方法
+const { showToast } = useToast();
 
-// 顯示 toast 通知
-const displayToast = (
-  message: string,
-  type: "success" | "warning" = "success"
-) => {
-  toastConfig.value = {
-    message,
-    bgClass: type === "success" ? "bg-success" : "bg-warning",
-    textClass:
-      type === "success" ? "text-success-content" : "text-warning-content",
-  };
-  showToast.value = true;
-  setTimeout(() => (showToast.value = false), 3000);
-};
-
-// ======== 庫存處理區 ========
-// 頁面載入時預先快取購物車中商品的庫存，此處不需要，跟watchAndFill功能重複
-// onMounted(() => {
-//   const ids = cartStore.items.map((item) => item.id);
-//   preloadStocks(ids);
-// });
-
-// 監聽購物車 items 變化，自動補快取庫存
 const { items } = storeToRefs(cartStore);
 watchAndFill(items);
-// 建立防抖函式：延遲觸發更新後端
+
+// 防抖更新
 const debouncedUpdate = debounce(async (item: CartItem) => {
   const result = await cartStore.updateItemQuantity(item.id, item.quantity);
-  displayToast(result.message, result.success ? "success" : "warning");
+  showToast(result.message, result.success ? "success" : "warning");
 }, 500);
 
-// 數量更新邏輯
+// 更新數量
 const updateQuantity = async (item: CartItem) => {
   const stock = await fetchStock(item.id);
   if (item.quantity <= 0) {
     item.quantity = 1;
-    displayToast("數量不得小於 1", "warning");
+    showToast("數量不得小於 1", "warning");
   } else if (item.quantity > stock) {
     item.quantity = stock;
-    displayToast(`庫存僅剩 ${stock} 件`, "warning");
+    showToast(`庫存僅剩 ${stock} 件`, "warning");
   }
-  debouncedUpdate(item); // 使用防抖更新
+  debouncedUpdate(item);
 };
 
-// 移除商品
+// 移除項目
 const removeItem = async (item: CartItem) => {
   const result = await cartStore.removeItem(item);
-  displayToast(result.message, result.success ? "success" : "warning");
+  showToast(result.message, result.success ? "success" : "warning");
 };
 
 // 清空購物車
 const clearCart = async () => {
-  const userUuid = "19de471a-2391-4205-baa9-774a691ca256"; // TODO: 從認證 store 動態取得
+  const userUuid = "19de471a-2391-4205-baa9-774a691ca256"; // TODO: 從登入取得
   const result = await cartStore.clearCart(userUuid);
-  displayToast(result.message, result.success ? "success" : "warning");
+  showToast(result.message, result.success ? "success" : "warning");
+};
+
+// 結帳檢查庫存
+const proceedToCheckout = async () => {
+  for (const item of cartStore.items) {
+    const hasStock = await productStore.checkStock(item.id, item.quantity);
+    if (!hasStock) {
+      showToast(`商品 ${item.name} 庫存不足`, "warning");
+      return;
+    }
+  }
+
+  orderStore.setupOrder(cartStore.items, cartStore.totalPrice);
+  router.push("/checkout");
 };
 </script>

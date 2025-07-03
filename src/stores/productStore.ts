@@ -84,6 +84,14 @@ export const useProductStore = defineStore("product", () => {
     await fetchProducts();
   };
 
+  const checkStock = async (productId: number, quantity: number) => {
+    const product = await fetchProductById(productId);
+    if (product) {
+      return product.stock >= quantity;
+    }
+    return false;
+  };
+
   return {
     products,
     categories,
@@ -99,6 +107,7 @@ export const useProductStore = defineStore("product", () => {
     setFilter,
     resetFilter,
     setPage,
+    checkStock,
   };
 });
 export type ProductStoreType = ReturnType<typeof useProductStore>;

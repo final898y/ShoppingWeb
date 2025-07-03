@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
+import axios from "@/utils/axios";
+import { useCartStore } from "./cartStore";
 
 // 表單型別
 export interface FormData {
@@ -77,7 +79,40 @@ export const useOrderStore = defineStore("order", () => {
     };
     cartItems.value = [];
     totalPrice.value = 0;
-    localStorage.removeItem("order-data");
+    localStorage.removeItem("orderingdata");
+  };
+
+  const createOrderFromCart = async () => {
+    const cartStore = useCartStore();
+    try {
+      const response = await axios.post("/checkoutflow/createOrderFromCart", {
+        userUuid: "19de471a-2391-4205-baa9-774a691ca256", //TODO：
+        shipping_address: formData.value.address,
+        order_note: formData.value.notes,
+        recipient_name: formData.value.name,
+        recipient_phone: formData.value.phone,
+        recipient_email: formData.value.email,
+        payment_method: "ecpay", //TODO：
+      });
+
+      if (response.data && response.data.orderNumber) {
+        const orderNumber = response.data.orderNumber;
+        clearOrder();
+        cartStore.clearCart("19de471a-2391-4205-baa9-774a691ca256"); //TODO: 從認證 store 動態取得
+        return orderNumber;
+      } else {
+        throw new Error("訂單建立失敗，伺服器未返回訂單ID");
+      }
+    } catch (error) {
+      console.error("建立訂單時發生錯誤:", error);
+      throw error;
+    }
+  };
+
+  const setupOrder = (items: CartItem[], total: number) => {
+    cartItems.value = items;
+    totalPrice.value = total;
+    saveToStorage();
   };
 
   return {
@@ -87,5 +122,7 @@ export const useOrderStore = defineStore("order", () => {
     loadFromStorage,
     clearOrder,
     saveToStorage,
+    createOrderFromCart,
+    setupOrder,
   };
 });

@@ -1,11 +1,4 @@
 <template>
-  <!-- Toast 通知 -->
-  <div class="toast toast-top toast-end" v-if="showToast">
-    <div class="alert" :class="[toastConfig.bgClass, toastConfig.textClass]">
-      <span>{{ toastConfig.message }}</span>
-    </div>
-  </div>
-
   <div class="min-h-[calc(100vh-16rem)] p-6 bg-base-100">
     <div class="container mx-auto max-w-4xl">
       <h1 class="text-2xl font-bold mb-6">訂單資料填寫</h1>
@@ -20,7 +13,7 @@
             :key="item.id"
             class="flex items-center gap-4 py-4 border-b border-base-200 last:border-b-0 hover:shadow-lg transition-shadow duration-300"
           >
-            <!-- 商品圖片，點擊可進入詳情頁 -->
+            <!-- 商品圖片 -->
             <router-link
               :to="`/product/${item.id}`"
               :aria-label="`查看 ${item.name} 詳情`"
@@ -38,9 +31,7 @@
               </figure>
             </router-link>
 
-            <!-- 商品資訊 -->
             <div class="flex-1">
-              <!-- 商品名稱，點擊可進入詳情頁 -->
               <router-link
                 :to="`/product/${item.id}`"
                 class="text-base font-medium hover:text-primary transition-colors"
@@ -170,11 +161,15 @@ import { ref, reactive, onMounted, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrderStore } from "@/stores/orderStore";
+import { useToast } from "@/composables/useToast";
 
 const cartStore = useCartStore();
 const orderStore = useOrderStore();
 const router = useRouter();
 const nameInput = ref<HTMLInputElement | null>(null);
+
+// 導入全域 toast 功能
+const toast = useToast();
 
 // 表單資料
 const formData = reactive({
@@ -198,23 +193,10 @@ const errors = reactive({
   email: "",
 });
 
-// Toast 控制
-const showToast = ref(false);
-const toastConfig = ref({
-  message: "",
-  bgClass: "bg-warning",
-  textClass: "text-warning-content",
-});
-
-const displayToast = (message: string) => {
-  toastConfig.value.message = message;
-  showToast.value = true;
-  setTimeout(() => (showToast.value = false), 3000);
-};
-
 // 表單驗證
 const validateForm = () => {
   let isValid = true;
+
   errors.name = formData.name.trim() ? "" : "請輸入收件人姓名";
   errors.phone = formData.phone.trim() ? "" : "請輸入聯繫電話";
   errors.address = formData.address.trim() ? "" : "請輸入收件地址";
@@ -224,7 +206,7 @@ const validateForm = () => {
 
   if (errors.name || errors.phone || errors.address || errors.email) {
     isValid = false;
-    displayToast("請填寫所有必填欄位並確保格式正確");
+    toast.showToast("請填寫所有必填欄位並確保格式正確", "warning");
   }
 
   return isValid;

@@ -1,11 +1,4 @@
 <template>
-  <!-- Toast 通知 -->
-  <div class="toast toast-top toast-end" v-if="showToast">
-    <div class="alert" :class="[toastConfig.bgClass, toastConfig.textClass]">
-      <span>{{ toastConfig.message }}</span>
-    </div>
-  </div>
-
   <div class="min-h-[calc(100vh-16rem)] p-6 bg-base-100">
     <div class="container mx-auto max-w-4xl">
       <h1 class="text-2xl font-bold mb-6">付款</h1>
@@ -102,44 +95,21 @@ import { computed, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useCartStore } from "@/stores/cartStore";
 import { useOrderStore } from "@/stores/orderStore";
+import { useToast } from "@/composables/useToast"; // ✅ 新增
 
-// 初始化
 const router = useRouter();
 const cartStore = useCartStore();
 const orderStore = useOrderStore();
 const isProcessing = ref(false);
 
-// Toast 控制
-const showToast = ref(false);
-const toastConfig = ref({
-  message: "",
-  bgClass: "bg-warning",
-  textClass: "text-warning-content",
-});
+// ✅ 全域 toast
+const toast = useToast();
 
-// 顯示 Toast
-const displayToast = (
-  message: string,
-  type: "success" | "warning" = "warning"
-) => {
-  toastConfig.value = {
-    message,
-    bgClass: type === "success" ? "bg-success" : "bg-warning",
-    textClass:
-      type === "success" ? "text-success-content" : "text-warning-content",
-  };
-  showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 3000);
-};
-
-// 從 orderStore 獲取資料
 const formData = computed(() => orderStore.formData);
 const cartItems = computed(() => orderStore.cartItems);
 const totalPrice = computed(() => orderStore.totalPrice);
 
-// 檢查訂單資料是否有效
+// 訂單是否有效
 const isValidOrder = computed(() => {
   return (
     formData.value.name &&
@@ -151,25 +121,26 @@ const isValidOrder = computed(() => {
   );
 });
 
-// 頁面載入時從 localStorage 恢復資料
+// 頁面載入時自動載入資料
 onMounted(() => {
   orderStore.loadFromStorage();
+
   if (!isValidOrder.value) {
-    displayToast("無有效的訂單資料，請重新填寫");
+    toast.showToast("無有效的訂單資料，請重新填寫", "warning");
     setTimeout(() => router.push("/checkout"), 3000);
   }
 });
 
-// 模擬付款
+// 模擬付款流程
 const processPayment = async () => {
   if (isProcessing.value) return;
   isProcessing.value = true;
 
   try {
-    // 模擬付款處理（2秒延遲）
+    // 模擬延遲
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
-    // 生成訂單
+    // 建立訂單資料
     const order = {
       id: Date.now(),
       items: cartItems.value,
@@ -178,24 +149,24 @@ const processPayment = async () => {
       createdAt: new Date().toISOString(),
     };
 
-    // 儲存訂單至 localStorage
+    // 寫入 localStorage
     const orders = JSON.parse(localStorage.getItem("orders") || "[]");
     orders.push(order);
     localStorage.setItem("orders", JSON.stringify(orders));
 
-    // 清空購物車和訂單資料
-    cartStore.clearCart("19de471a-2391-4205-baa9-774a691ca256"); //TODO: 從認證 store 動態取得
+    // 清除資料
+    cartStore.clearCart("19de471a-2391-4205-baa9-774a691ca256"); // TODO: 從使用者登入狀態取得
     orderStore.clearOrder();
 
-    // 顯示成功提示並導航回首頁
-    displayToast("付款成功，訂單已提交！", "success");
+    // 顯示成功提示
+    toast.showToast("付款成功，訂單已提交！", "success");
     setTimeout(() => {
       router.push("/");
       isProcessing.value = false;
     }, 3000);
   } catch (error) {
-    console.error("付款處理失敗：", error);
-    displayToast("付款失敗，請稍後重試");
+    console.error("付款失敗：", error);
+    toast.showToast("付款失敗，請稍後重試", "warning");
     isProcessing.value = false;
   }
 };
