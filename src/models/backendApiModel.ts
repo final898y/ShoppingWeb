@@ -48,3 +48,28 @@ export function isUserData(data: any): data is UserDataType {
     typeof data.email === "string"
   );
 }
+
+// 定義訂單項目的類型
+export interface OrderItem {
+  productId: number;
+  name: string; 
+  quantity: number;
+  price: number;
+  image_url?: string;
+  // 如果有其他商品相關資訊，也可以加在這裡
+  product: {
+    name: string;
+  };
+}
+
+// 定義訂單主體的類型
+export interface Order {
+  id: string; // 訂單編號
+  status: 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
+  createdAt: string; // 訂單建立時間的 ISO 字符串
+  totalAmount: number;
+  items: OrderItem[];
+  // 可以根據需要添加更多欄位，例如：
+  // shippingAddress: string;
+  // recipientName: string;
+}

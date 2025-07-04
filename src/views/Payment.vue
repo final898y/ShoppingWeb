@@ -1,173 +1,194 @@
 <template>
-  <div class="min-h-[calc(100vh-16rem)] p-6 bg-base-100">
-    <div class="container mx-auto max-w-4xl">
-      <h1 class="text-2xl font-bold mb-6">付款</h1>
+  <div class="payment-container">
+    <div v-if="isLoading" class="card">
+      <h2>正在確認付款結果...</h2>
+      <p>請稍候，我們正在與金流服務確認您的付款狀態。</p>
+    </div>
 
-      <!-- 無有效資料提示 -->
-      <div v-if="!isValidOrder" class="text-center text-base-content/80">
-        <p class="text-lg">無訂單資料，請重新填寫</p>
-        <router-link to="/checkout" class="btn btn-primary mt-4"
-          >返回填寫</router-link
-        >
+    <div v-else-if="paymentStatus === 'success'" class="card success">
+      <h2>🎉 付款成功！</h2>
+      <p>感謝您的購買，我們將盡快為您處理訂單。</p>
+      <div class="actions">
+        <router-link to="/orders" class="btn btn-primary">查看我的訂單</router-link>
+        <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
       </div>
+    </div>
 
-      <!-- 付款頁面 -->
-      <div v-else>
-        <!-- 商品清單 -->
-        <div class="card bg-base-100 shadow-xl border border-base-300 mb-6">
-          <div class="card-body">
-            <h2 class="text-lg font-semibold mb-4">訂單商品</h2>
-            <div
-              v-for="item in cartItems"
-              :key="item.id"
-              class="flex items-center gap-4 py-4 border-b border-base-200 last:border-b-0 hover:shadow-lg transition-shadow duration-300"
-            >
-              <!-- 商品圖片，點擊可進入詳情頁 -->
-              <router-link
-                :to="`/product/${item.id}`"
-                :aria-label="`查看 ${item.name} 詳情`"
-              >
-                <figure
-                  class="w-24 h-24 overflow-hidden rounded-lg bg-base-200 flex justify-center items-center"
-                >
-                  <img
-                    :src="item.image_url || '/NoImage.png'"
-                    :alt="`${item.name} 商品圖片`"
-                    class="max-w-full max-h-full object-contain transition-transform duration-300 hover:scale-105"
-                    loading="lazy"
-                    @error="item.image_url = '/NoImage.png'"
-                  />
-                </figure>
-              </router-link>
+    <div v-else-if="paymentStatus === 'failed'" class="card failed">
+      <h2>付款失敗</h2>
+      <p>喔不，在處理您的付款時發生了一些問題。</p>
+      <p v-if="order?.id">訂單編號: {{ order.id }}</p>
+      <div class="actions">
+        <button @click="retryPayment" class="btn btn-primary">重新付款</button>
+        <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
+      </div>
+    </div>
+    
+    <div v-else-if="paymentStatus === 'expired'" class="card expired">
+      <h2>訂單已過期</h2>
+      <p>此訂單已超過1小時的付款期限，請重新下單。</p>
+       <div class="actions">
+        <router-link to="/" class="btn btn-primary">回到首頁</router-link>
+      </div>
+    </div>
 
-              <!-- 商品資訊 -->
-              <div class="flex-1">
-                <!-- 商品名稱，點擊可進入詳情頁 -->
-                <router-link
-                  :to="`/product/${item.id}`"
-                  class="text-base font-medium hover:text-primary transition-colors"
-                  :aria-label="`查看 ${item.name} 詳情`"
-                >
-                  {{ item.name }}
-                </router-link>
-                <p class="text-sm">單價：${{ item.price }}</p>
-                <p class="text-sm">數量：{{ item.quantity }}</p>
-                <p class="text-sm font-bold">
-                  小計：${{ (item.price * item.quantity).toFixed(2) }}
-                </p>
-              </div>
-            </div>
-            <div class="text-right mt-4">
-              <p class="text-lg font-bold">
-                總金額：${{ totalPrice.toFixed(2) }}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 付款資訊 -->
-        <div class="card bg-base-100 shadow-xl border border-base-300">
-          <div class="card-body">
-            <h2 class="text-lg font-semibold mb-4">付款資訊</h2>
-            <p class="text-base">訂單總金額：${{ totalPrice.toFixed(2) }}</p>
-            <p class="text-sm text-base-content/80 mt-2">
-              這是模擬付款頁面，點擊下方按鈕完成付款。
-            </p>
-            <div class="card-actions justify-end mt-6">
-              <button
-                class="btn btn-primary"
-                :disabled="isProcessing"
-                @click="processPayment"
-                :aria-label="isProcessing ? '正在處理付款' : '模擬付款'"
-              >
-                {{ isProcessing ? "處理中..." : "模擬付款" }}
-              </button>
-            </div>
-          </div>
-        </div>
+    <div v-else class="card">
+      <h2>無法確認訂單狀態</h2>
+      <p>我們無法找到對應的訂單資訊，或發生未預期的錯誤。</p>
+       <div class="actions">
+        <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { useCartStore } from "@/stores/cartStore";
-import { useOrderStore } from "@/stores/orderStore";
-import { useToast } from "@/composables/useToast"; // ✅ 新增
+import { ref, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { useOrderStore } from '@/stores/orderStore';
+import type { Order } from '@/models/backendApiModel';
 
-const router = useRouter();
-const cartStore = useCartStore();
+type PaymentStatus = 'pending' | 'success' | 'failed' | 'expired';
+
+const route = useRoute();
 const orderStore = useOrderStore();
-const isProcessing = ref(false);
 
-// ✅ 全域 toast
-const toast = useToast();
+const isLoading = ref(true);
+const paymentStatus = ref<PaymentStatus>('pending');
+const order = ref<Order | null>(null);
 
-const formData = computed(() => orderStore.formData);
-const cartItems = computed(() => orderStore.cartItems);
-const totalPrice = computed(() => orderStore.totalPrice);
+onMounted(async () => {
+  const orderNumber = route.query.orderNumber as string;
+  const statusFromThirdParty = route.query.status as string; 
 
-// 訂單是否有效
-const isValidOrder = computed(() => {
-  return (
-    formData.value.name &&
-    formData.value.phone &&
-    formData.value.address &&
-    formData.value.email &&
-    cartItems.value.length > 0 &&
-    totalPrice.value > 0
-  );
-});
+  if (!orderNumber) {
+    isLoading.value = false;
+    paymentStatus.value = 'failed';
+    return;
+  }
 
-// 頁面載入時自動載入資料
-onMounted(() => {
-  orderStore.loadFromStorage();
+  try {
+    const fetchedOrder = await orderStore.fetchOrder(orderNumber);
+    order.value = fetchedOrder;
 
-  if (!isValidOrder.value) {
-    toast.showToast("無有效的訂單資料，請重新填寫", "warning");
-    setTimeout(() => router.push("/checkout"), 3000);
+    if (!fetchedOrder) {
+      throw new Error("Order not found");
+    }
+
+    const orderCreationTime = new Date(fetchedOrder.createdAt).getTime();
+    const oneHour = 60 * 60 * 1000;
+    if (Date.now() - orderCreationTime > oneHour && fetchedOrder.status !== 'PAID') {
+      paymentStatus.value = 'expired';
+      return;
+    }
+
+    if (fetchedOrder.status === 'PAID') {
+      paymentStatus.value = 'success';
+    } else if (statusFromThirdParty === 'fail') {
+      paymentStatus.value = 'failed';
+    } else {
+      paymentStatus.value = 'failed';
+    }
+
+  } catch (error) {
+    console.error("Failed to verify payment:", error);
+    paymentStatus.value = 'failed';
+  } finally {
+    isLoading.value = false;
   }
 });
 
-// 模擬付款流程
-const processPayment = async () => {
-  if (isProcessing.value) return;
-  isProcessing.value = true;
-
+const retryPayment = async () => {
+  if (!order.value?.id) return;
   try {
-    // 模擬延遲
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // 建立訂單資料
-    const order = {
-      id: Date.now(),
-      items: cartItems.value,
-      totalPrice: totalPrice.value,
-      formData: formData.value,
-      createdAt: new Date().toISOString(),
-    };
-
-    // 寫入 localStorage
-    const orders = JSON.parse(localStorage.getItem("orders") || "[]");
-    orders.push(order);
-    localStorage.setItem("orders", JSON.stringify(orders));
-
-    // 清除資料
-    cartStore.clearCart("19de471a-2391-4205-baa9-774a691ca256"); // TODO: 從使用者登入狀態取得
-    orderStore.clearOrder();
-
-    // 顯示成功提示
-    toast.showToast("付款成功，訂單已提交！", "success");
-    setTimeout(() => {
-      router.push("/");
-      isProcessing.value = false;
-    }, 3000);
+    await orderStore.retryPayment(order.value.id);
   } catch (error) {
-    console.error("付款失敗：", error);
-    toast.showToast("付款失敗，請稍後重試", "warning");
-    isProcessing.value = false;
+    console.error("Retry payment failed:", error);
+    alert("重新付款失敗，請稍後再試或聯繫客服。");
   }
 };
 </script>
+
+<style scoped>
+.payment-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  padding: 2rem;
+  background-color: #f9f9f9;
+}
+
+.card {
+  background: white;
+  padding: 2.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 500px;
+  width: 100%;
+  border-top: 4px solid #6c757d; /* Default border */
+}
+
+.card.success {
+  border-top-color: #28a745;
+}
+
+.card.failed {
+  border-top-color: #dc3545;
+}
+
+.card.expired {
+  border-top-color: #ffc107;
+}
+
+.card h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  color: #333;
+}
+
+.card p {
+  font-size: 1.1rem;
+  color: #666;
+  margin-bottom: 2rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+}
+
+.btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0056b3;
+}
+
+.btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #5a6268;
+}
+</style>
