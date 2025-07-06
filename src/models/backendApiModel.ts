@@ -1,3 +1,5 @@
+import z from "zod";
+
 export type ApiResponse<T> = {
   success: boolean;
   message: string;
@@ -52,7 +54,7 @@ export function isUserData(data: any): data is UserDataType {
 // 定義訂單項目的類型
 export interface OrderItem {
   productId: number;
-  name: string; 
+  name: string;
   quantity: number;
   price: number;
   image_url?: string;
@@ -65,7 +67,7 @@ export interface OrderItem {
 // 定義訂單主體的類型
 export interface Order {
   id: string; // 訂單編號
-  status: 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
+  status: "PENDING" | "PAID" | "SHIPPED" | "COMPLETED" | "CANCELLED";
   createdAt: string; // 訂單建立時間的 ISO 字符串
   totalAmount: number;
   items: OrderItem[];
@@ -73,3 +75,11 @@ export interface Order {
   // shippingAddress: string;
   // recipientName: string;
 }
+
+export const ecPayBackendOutputSchema = z.object({
+  CheckMacValue: z.string(),
+  MerchantTradeNo: z.string(),
+  MerchantID: z.string(),
+  ReturnURL: z.string(),
+  EncryptType: z.number(),
+});

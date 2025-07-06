@@ -5,16 +5,18 @@
       <p>請稍候，我們正在與金流服務確認您的付款狀態。</p>
     </div>
 
-    <div v-else-if="paymentStatus === 'success'" class="card success">
+    <div v-else-if="paymentStatus === 'PAID'" class="card success">
       <h2>🎉 付款成功！</h2>
       <p>感謝您的購買，我們將盡快為您處理訂單。</p>
       <div class="actions">
-        <router-link to="/orders" class="btn btn-primary">查看我的訂單</router-link>
+        <router-link to="/orders" class="btn btn-primary"
+          >查看我的訂單</router-link
+        >
         <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
       </div>
     </div>
 
-    <div v-else-if="paymentStatus === 'failed'" class="card failed">
+    <div v-else-if="paymentStatus === 'FAILED'" class="card failed">
       <h2>付款失敗</h2>
       <p>喔不，在處理您的付款時發生了一些問題。</p>
       <p v-if="order?.id">訂單編號: {{ order.id }}</p>
@@ -23,11 +25,11 @@
         <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
       </div>
     </div>
-    
+
     <div v-else-if="paymentStatus === 'expired'" class="card expired">
       <h2>訂單已過期</h2>
       <p>此訂單已超過1小時的付款期限，請重新下單。</p>
-       <div class="actions">
+      <div class="actions">
         <router-link to="/" class="btn btn-primary">回到首頁</router-link>
       </div>
     </div>
@@ -35,7 +37,7 @@
     <div v-else class="card">
       <h2>無法確認訂單狀態</h2>
       <p>我們無法找到對應的訂單資訊，或發生未預期的錯誤。</p>
-       <div class="actions">
+      <div class="actions">
         <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
       </div>
     </div>
@@ -43,56 +45,58 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useOrderStore } from '@/stores/orderStore';
-import type { Order } from '@/models/backendApiModel';
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useOrderStore } from "@/stores/orderStore";
+import type { Order } from "@/models/backendApiModel";
 
-type PaymentStatus = 'pending' | 'success' | 'failed' | 'expired';
+type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "expired";
 
 const route = useRoute();
 const orderStore = useOrderStore();
 
 const isLoading = ref(true);
-const paymentStatus = ref<PaymentStatus>('pending');
+const paymentStatus = ref<PaymentStatus>("PENDING");
 const order = ref<Order | null>(null);
 
 onMounted(async () => {
   const orderNumber = route.query.orderNumber as string;
-  const statusFromThirdParty = route.query.status as string; 
 
   if (!orderNumber) {
     isLoading.value = false;
-    paymentStatus.value = 'failed';
+    paymentStatus.value = "FAILED";
     return;
   }
 
   try {
-    const fetchedOrder = await orderStore.fetchOrder(orderNumber);
-    order.value = fetchedOrder;
+    // const fetchedOrder = await orderStore.fetchOrder(orderNumber);
+    // order.value = fetchedOrder;
 
-    if (!fetchedOrder) {
-      throw new Error("Order not found");
-    }
+    // if (!fetchedOrder) {
+    //   throw new Error("Order not found");
+    // }
 
-    const orderCreationTime = new Date(fetchedOrder.createdAt).getTime();
-    const oneHour = 60 * 60 * 1000;
-    if (Date.now() - orderCreationTime > oneHour && fetchedOrder.status !== 'PAID') {
-      paymentStatus.value = 'expired';
-      return;
-    }
+    // 這裡可以保留或移除訂單過期邏輯，根據您的需求
+    // const orderCreationTime = new Date(fetchedOrder.createdAt).getTime();
+    // const oneHour = 60 * 60 * 1000;
+    // if (
+    //   Date.now() - orderCreationTime > oneHour &&
+    //   fetchedOrder.status !== "PAID"
+    // ) {
+    //   paymentStatus.value = "expired";
+    //   return;
+    // }
 
-    if (fetchedOrder.status === 'PAID') {
-      paymentStatus.value = 'success';
-    } else if (statusFromThirdParty === 'fail') {
-      paymentStatus.value = 'failed';
+    // 根據後端驗證的最終狀態來決定顯示成功或失敗
+    const result = await orderStore.fetchOrderPaymentStatus(orderNumber);
+    if (result && result === "PAID") {
+      paymentStatus.value = "PAID";
     } else {
-      paymentStatus.value = 'failed';
+      paymentStatus.value = "FAILED";
     }
-
   } catch (error) {
     console.error("Failed to verify payment:", error);
-    paymentStatus.value = 'failed';
+    paymentStatus.value = "FAILED";
   } finally {
     isLoading.value = false;
   }
@@ -171,7 +175,7 @@ const retryPayment = async () => {
 }
 
 .btn:hover {
-    transform: translateY(-2px);
+  transform: translateY(-2px);
 }
 
 .btn-primary {

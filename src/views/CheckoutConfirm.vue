@@ -79,13 +79,21 @@
           <router-link to="/checkout" class="btn btn-outline"
             >返回編輯</router-link
           >
-          <button
-            class="btn btn-primary"
-            @click="proceedToPayment"
-            :disabled="isProcessing"
+
+          <form
+            id="sendtoecpayform"
+            @submit.prevent="proceedToPayment"
+            method="post"
+            action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5"
           >
-            {{ isProcessing ? "處理中..." : "進入付款" }}
-          </button>
+            <button
+              class="btn btn-primary"
+              type="submit"
+              :disabled="isProcessing"
+            >
+              {{ isProcessing ? "處理中..." : "進入付款" }}
+            </button>
+          </form>
         </div>
       </div>
     </div>
@@ -96,7 +104,6 @@
 import { computed, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useOrderStore } from "@/stores/orderStore";
-import axios from "@/utils/axios";
 
 const router = useRouter();
 const orderStore = useOrderStore();
@@ -129,99 +136,16 @@ const cartItems = computed(() => orderStore.cartItems);
 const totalPrice = computed(() => orderStore.totalPrice);
 
 // 進入付款頁面
-// const proceedToPayment = async () => {
-//   if (isProcessing.value) return;
-//   isProcessing.value = true;
-//   try {
-//     const orderNumber = await orderStore.createOrderFromCart();
-//     if (orderNumber) {
-//       router.push(`/payment?orderNumber=${orderNumber}`);
-//     } else {
-//       // 可以在此處添加更詳細的錯誤處理，例如顯示一個 toast 通知
-//       console.error("訂單建立失敗，未返回訂單ID");
-//     }
-//   } catch (error) {
-//     console.error("建立訂單或導向付款頁面失敗：", error);
-//   } finally {
-//     isProcessing.value = false;
-//   }
-// };
 const proceedToPayment = async () => {
   if (isProcessing.value) return;
   isProcessing.value = true;
-
   try {
-    // 第一步：建立訂單並取得訂單編號
-    const orderNumber = await orderStore.createOrderFromCart();
-    if (!orderNumber) throw new Error("訂單建立失敗");
-
-    // 第二步：準備送給後端的 ecPay 資料
-    const tradeDate = new Date();
-    const tradeDateString = formatDate(tradeDate);
-
-    const ecPayRequest = {
-      MerchantTradeDate: tradeDateString,
-      PaymentType: "aio",
-      TotalAmount: Math.round(totalPrice.value), // 確保是整數
-      TradeDesc: "線上購物付款",
-      ItemName: cartItems.value.map((item) => item.name).join("#"),
-      ChoosePayment: "ALL",
-      ClientBackURL: "http://localhost:5173/Payment", // 或部署後正式網址
-    };
-
-    // 第三步：向後端請求 CheckMacValue 與 MerchantTradeNo
-    const response = await axios.post("/pay/ecpay/getcheckout", ecPayRequest);
-    const backendData = response.data;
-
-    if (!backendData.CheckMacValue || !backendData.MerchantTradeNo) {
-      throw new Error("後端回傳資料格式錯誤");
-    }
-
-    // 第四步：準備表單自動送出至綠界
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
-
-    const ecPayFinalData = {
-      ...ecPayRequest,
-      MerchantTradeNo: backendData.MerchantTradeNo,
-      CheckMacValue: backendData.CheckMacValue,
-    };
-
-    for (const key in ecPayFinalData) {
-      const input = document.createElement("input");
-      input.type = "hidden";
-      input.name = key;
-      input.value =
-        ecPayFinalData[key as keyof typeof ecPayFinalData].toString();
-      form.appendChild(input);
-    }
-
-    document.body.appendChild(form);
-    form.submit(); // ✅ 將使用者導向綠界收銀台
+    await orderStore.initiateEcpayPayment();
+    // 錯誤處理和 isProcessing 的重設將由 initiateEcpayPayment 內部處理或在 UI 層捕獲
   } catch (error) {
-    console.error("付款流程發生錯誤：", error);
-  } finally {
-    isProcessing.value = false;
+    console.error("進入付款流程失敗：", error);
+    // 可以在此處添加用戶提示，例如 toast
+    isProcessing.value = false; // 確保在出錯時重設按鈕狀態
   }
 };
-
-// function formatDate(date:Date) {
-//   const year = date.getFullYear();
-//   const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份是 0-11，需要 +1，並補 0
-//   const day = String(date.getDate()).padStart(2, '0');
-//   const hours = String(date.getHours()).padStart(2, '0');
-//   const minutes = String(date.getMinutes()).padStart(2, '0');
-//   const seconds = String(date.getSeconds()).padStart(2, '0');
-
-//   return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
-// }
-function formatDate(date: Date): string {
-  const pad = (n: number) => n.toString().padStart(2, "0");
-  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(
-    date.getDate()
-  )} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-    date.getSeconds()
-  )}`;
-}
 </script>
