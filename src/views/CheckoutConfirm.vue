@@ -122,6 +122,9 @@ onMounted(() => {
   if (!isValidOrder.value) {
     router.push("/checkout");
   }
+  if (orderStore.currentOrderNumber) {
+    status.value = "failed";
+  }
 });
 
 const {

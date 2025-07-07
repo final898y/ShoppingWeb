@@ -43,7 +43,7 @@ export const useOrderStore = defineStore("order", () => {
 
   // 自動儲存資料
   watch(
-    [formData, cartItems, totalPrice],
+    [formData, cartItems, totalPrice, currentOrderNumber],
     () => {
       localStorage.setItem(
         "currentOrderData",
@@ -51,6 +51,7 @@ export const useOrderStore = defineStore("order", () => {
           formData: formData.value,
           cartItems: cartItems.value,
           totalPrice: totalPrice.value,
+          currentOrderNumber: currentOrderNumber.value,
         })
       );
     },
