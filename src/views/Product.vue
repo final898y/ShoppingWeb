@@ -18,7 +18,7 @@
           <!-- 商品圖片 -->
           <div class="md:w-1/2">
             <img
-              :src="imageSrc"
+              :src="product_ImageUrl"
               :alt="`${product.name} 商品圖片`"
               class="w-full h-96 object-contain rounded-lg"
               loading="lazy"
@@ -88,7 +88,7 @@ const loading = ref(true);
 const productId = Number(route.params.id);
 
 // 動態圖片路徑（fallback 處理）
-const imageSrc = computed(() => {
+const product_ImageUrl = computed(() => {
   return product.value?.image_url || "/NoImage.png";
 });
 

@@ -40,7 +40,7 @@
           </div>
 
           <!-- 分頁 -->
-          <div v-if="totalPages > 1" class="flex justify-center mt-8">
+          <div v-if="home_TotalPages > 1" class="flex justify-center mt-8">
             <div class="join">
               <button
                 class="join-item btn"
@@ -60,7 +60,9 @@
               </button>
               <button
                 class="join-item btn"
-                :class="{ 'btn-disabled': productStore.currentPage === totalPages }"
+                :class="{
+                  'btn-disabled': productStore.currentPage === home_TotalPages,
+                }"
                 @click.prevent="goToPage(productStore.currentPage + 1)"
               >
                 »
@@ -87,13 +89,13 @@ import { useProductStore } from "@/stores/productStore";
 
 const productStore = useProductStore();
 
-const totalPages = computed(() =>
+const home_TotalPages = computed(() =>
   Math.ceil(productStore.totalProducts / productStore.pageSize)
 );
 
 const visiblePages = computed(() => {
   const current = productStore.currentPage;
-  const total = totalPages.value;
+  const total = home_TotalPages.value;
   const delta = 2;
   let start = current - delta;
   let end = current + delta;
@@ -112,7 +114,7 @@ const visiblePages = computed(() => {
 });
 
 const goToPage = async (page: number) => {
-  if (page < 1 || page > totalPages.value) return;
+  if (page < 1 || page > home_TotalPages.value) return;
   await productStore.setPage(page);
 };
 

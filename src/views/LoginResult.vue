@@ -31,30 +31,30 @@ const userStore = useLoginStore();
 const router = useRouter();
 
 // 提出 isRegistered 為 computed 變數，讓語意更清楚
-const isRegistered = computed(() => userStore.isregistered);
+const loginResult_isRegistered = computed(() => userStore.isregistered);
 
 // 根據註冊狀態顯示標題
 const welcomeTitle = computed(() => {
-  return isRegistered.value
+  return loginResult_isRegistered.value
     ? `${userStore.email} 登入成功。`
     : "此帳號尚未註冊。";
 });
 
 // 根據註冊狀態顯示訊息
 const welcomeMessage = computed(() => {
-  return isRegistered.value
+  return loginResult_isRegistered.value
     ? "歡迎回來！您已成功登入系統。"
     : "歡迎前往註冊頁面加入會員！";
 });
 
 // 根據註冊狀態決定按鈕文字
 const linkName = computed(() => {
-  return isRegistered.value ? "首頁" : "註冊";
+  return loginResult_isRegistered.value ? "首頁" : "註冊";
 });
 
 // 根據註冊狀態導向不同頁面
 function goToHome() {
-  const targetRoute = isRegistered.value ? "/" : "/register";
+  const targetRoute = loginResult_isRegistered.value ? "/" : "/register";
   router.push(targetRoute);
 }
 </script>

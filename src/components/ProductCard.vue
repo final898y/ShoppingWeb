@@ -8,7 +8,7 @@
         class="h-72 md:h-80 overflow-hidden rounded-lg bg-base-200 flex justify-center items-center"
       >
         <img
-          :src="imageSrc"
+          :src="productCard_ImageUrl"
           :alt="`${product.name} 商品圖片`"
           class="max-h-full max-w-full object-contain transition-transform duration-300 hover:scale-105"
           loading="lazy"
@@ -66,9 +66,9 @@ const cartStore = useCartStore();
 const { showToast } = useToast(); // ✅ 呼叫全域 toast
 
 // 圖片備援處理
-const imageSrc = ref(product.image_url || "/NoImage.png");
+const productCard_ImageUrl = ref(product.image_url || "/NoImage.png");
 const onImageError = () => {
-  imageSrc.value = "/NoImage.png";
+  productCard_ImageUrl.value = "/NoImage.png";
 };
 
 // 價格格式化
