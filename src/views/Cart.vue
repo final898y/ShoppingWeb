@@ -98,14 +98,7 @@ import { useOrderStore } from "@/stores/orderStore";
 import { debounce } from "@/utils/debounce";
 import { useStockCache } from "@/composables/useStockCache";
 import { useToast } from "@/composables/useToast"; // ✅ 使用全域 Toast
-
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  image_url: string;
-}
+import { CartItem } from "@/models/cartOrderModel";
 
 const cartStore = useCartStore();
 const productStore = useProductStore();

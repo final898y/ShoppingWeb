@@ -15,7 +15,7 @@
           <div class="card-body">
             <h2 class="text-lg font-semibold mb-4">訂單商品</h2>
             <div
-              v-for="item in cartItems"
+              v-for="item in ckConfirmcartItems"
               :key="item.id"
               class="flex items-center gap-4 py-4 border-b border-base-200 last:border-b-0 hover:shadow-lg transition-shadow duration-300"
             >
@@ -56,7 +56,7 @@
             </div>
             <div class="text-right mt-4">
               <p class="text-lg font-bold">
-                總金額：${{ totalPrice.toFixed(2) }}
+                總金額：${{ ckConfirmtotalPrice.toFixed(2) }}
               </p>
             </div>
           </div>
@@ -65,35 +65,38 @@
         <div class="card bg-base-100 shadow-xl border border-base-300">
           <div class="card-body">
             <h2 class="text-lg font-semibold mb-4">收件人資訊</h2>
-            <p class="text-sm">姓名：{{ formData.name }}</p>
-            <p class="text-sm">電話：{{ formData.phone }}</p>
-            <p class="text-sm">地址：{{ formData.address }}</p>
-            <p class="text-sm">電子郵件：{{ formData.email }}</p>
-            <p class="text-sm" v-if="formData.notes">
-              備註：{{ formData.notes }}
+            <p class="text-sm">姓名：{{ ckConfirmformData.name }}</p>
+            <p class="text-sm">電話：{{ ckConfirmformData.phone }}</p>
+            <p class="text-sm">地址：{{ ckConfirmformData.address }}</p>
+            <p class="text-sm">電子郵件：{{ ckConfirmformData.email }}</p>
+            <p class="text-sm" v-if="ckConfirmformData.notes">
+              備註：{{ ckConfirmformData.notes }}
             </p>
           </div>
         </div>
 
-        <div class="flex justify-between mt-6">
+        <div class="flex justify-between items-center mt-6">
           <router-link to="/checkout" class="btn btn-outline"
             >返回編輯</router-link
           >
 
-          <form
-            id="sendtoecpayform"
-            @submit.prevent="proceedToPayment"
-            method="post"
-            action="https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5"
-          >
+          <div class="flex flex-col items-end">
+            <!-- 失敗時顯示錯誤訊息 -->
+            <p v-if="status === 'failed'" class="text-error mb-2 text-sm">
+              {{ errorMessage }}
+            </p>
             <button
               class="btn btn-primary"
-              type="submit"
-              :disabled="isProcessing"
+              @click="handlePayment"
+              :disabled="status === 'processing'"
             >
-              {{ isProcessing ? "處理中..." : "進入付款" }}
+              <span
+                v-if="status === 'processing'"
+                class="loading loading-spinner"
+              ></span>
+              {{ buttonText }}
             </button>
-          </form>
+          </div>
         </div>
       </div>
     </div>
@@ -104,48 +107,74 @@
 import { computed, ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useOrderStore } from "@/stores/orderStore";
+import { storeToRefs } from "pinia";
 
 const router = useRouter();
 const orderStore = useOrderStore();
-const isProcessing = ref(false);
 
-// 在頁面加載時嘗試從 localStorage 恢復資料
+// 頁面狀態管理
+type PageStatus = "idle" | "processing" | "failed";
+const status = ref<PageStatus>("idle");
+const errorMessage = ref<string | null>(null);
+
 onMounted(() => {
   orderStore.loadFromStorage();
-  // 若資料無效，自動導回訂單填寫頁面
   if (!isValidOrder.value) {
     router.push("/checkout");
   }
 });
 
+const {
+  formData: ckConfirmformData,
+  cartItems: ckConfirmcartItems,
+  totalPrice: ckConfirmtotalPrice,
+} = storeToRefs(orderStore);
+
 // 檢查訂單資料是否有效
 const isValidOrder = computed(() => {
   return (
-    formData.value.name &&
-    formData.value.phone &&
-    formData.value.address &&
-    formData.value.email &&
-    cartItems.value.length > 0 &&
-    totalPrice.value > 0
+    !!ckConfirmformData.value.name &&
+    !!ckConfirmformData.value.phone &&
+    !!ckConfirmformData.value.address &&
+    !!ckConfirmformData.value.email &&
+    ckConfirmcartItems.value.length > 0 &&
+    ckConfirmtotalPrice.value > 0
   );
 });
 
-// 從 orderStore 獲取資料
-const formData = computed(() => orderStore.formData);
-const cartItems = computed(() => orderStore.cartItems);
-const totalPrice = computed(() => orderStore.totalPrice);
+const buttonText = computed(() => {
+  switch (status.value) {
+    case "processing":
+      return "處理中...";
+    case "failed":
+      return "重試付款";
+    default:
+      return "進入付款";
+  }
+});
 
-// 進入付款頁面
-const proceedToPayment = async () => {
-  if (isProcessing.value) return;
-  isProcessing.value = true;
+const handlePayment = async () => {
+  if (status.value === "processing") return;
+
+  status.value = "processing";
+  errorMessage.value = null;
+
   try {
-    await orderStore.initiateEcpayPayment();
-    // 錯誤處理和 isProcessing 的重設將由 initiateEcpayPayment 內部處理或在 UI 層捕獲
-  } catch (error) {
-    console.error("進入付款流程失敗：", error);
-    // 可以在此處添加用戶提示，例如 toast
-    isProcessing.value = false; // 確保在出錯時重設按鈕狀態
+    if (orderStore.currentOrderNumber) {
+      // 如果是重試，調用 retryPayment
+      await orderStore.retryPayment(orderStore.currentOrderNumber);
+    } else {
+      // 首次付款
+      await orderStore.initiateEcpayPayment();
+    }
+    // 如果成功，頁面會跳轉到綠界，這裡不需要做什麼
+  } catch (error: any) {
+    console.error("付款流程失敗：", error);
+    status.value = "failed";
+    errorMessage.value = "付款請求失敗，請檢查您的網路連線或稍後再試。";
+    if (!orderStore.currentOrderNumber) {
+      errorMessage.value += " 無法建立訂單，請返回上一步檢查資料。";
+    }
   }
 };
 </script>

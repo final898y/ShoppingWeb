@@ -1,7 +1,7 @@
 import { reactive, watch } from "vue";
 import type { Ref } from "vue";
 import type { ProductStoreType } from "@/stores/productStore";
-
+import { debounce } from "@/utils/debounce";
 // 快取有效時間（毫秒）: 5 分鐘
 const CACHE_TTL = 5 * 60 * 1000;
 
@@ -9,8 +9,6 @@ type CacheEntry = {
   stock: number;
   timestamp: number;
 };
-
-type CartItem = { id: number };
 
 export function useStockCache(productStore: ProductStoreType) {
   // 1. 快取商品庫存 + 時間戳記
@@ -22,18 +20,6 @@ export function useStockCache(productStore: ProductStoreType) {
   // 3. 判斷是否過期
   const isExpired = (entry: CacheEntry): boolean =>
     Date.now() - entry.timestamp > CACHE_TTL;
-
-  // 4. 簡易 debounce 工具
-  function debounce<T extends (...args: any[]) => void>(
-    fn: T,
-    delay: number
-  ): (...args: Parameters<T>) => void {
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    return (...args: Parameters<T>) => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => fn(...args), delay);
-    };
-  }
 
   // 5. 快取取得庫存（無資料或過期則回傳 0）
   const getStock = (id: number): number => {
@@ -82,7 +68,7 @@ export function useStockCache(productStore: ProductStoreType) {
   };
 
   // 8. 監聽購物車變化，自動補快取
-  const watchAndFill = (items: Ref<CartItem[]>) => {
+  const watchAndFill = (items: Ref<{ id: number }[]>) => {
     watch(
       () => items.value.map((item) => item.id),
       async (ids) => {

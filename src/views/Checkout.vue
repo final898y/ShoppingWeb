@@ -219,7 +219,6 @@ const confirmOrder = () => {
   orderStore.formData = JSON.parse(JSON.stringify(formData));
   orderStore.cartItems = JSON.parse(JSON.stringify(cartStore.items));
   orderStore.totalPrice = cartStore.totalPrice;
-
   router.push("/checkoutconfirm");
 };
 </script>

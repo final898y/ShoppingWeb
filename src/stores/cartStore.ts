@@ -1,26 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import axios from "@/utils/axios";
-import { z } from "zod";
-
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  image_url: string;
-}
-
-interface ClearCartResult {
-  success: boolean;
-  message: string;
-}
-
-const AddToCartRequestSchema = z.object({
-  userUuid: z.string().uuid(),
-  productId: z.number().int().positive(),
-  quantity: z.number().int().min(1),
-});
+import { CartItem, ClearCartResult } from "@/models/cartOrderModel";
 
 export const useCartStore = defineStore("cart", () => {
   // 狀態

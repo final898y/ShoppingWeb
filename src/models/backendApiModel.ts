@@ -83,3 +83,9 @@ export const ecPayBackendOutputSchema = z.object({
   ReturnURL: z.string(),
   EncryptType: z.number(),
 });
+
+const AddToCartRequestSchema = z.object({
+  userUuid: z.string().uuid(),
+  productId: z.number().int().positive(),
+  quantity: z.number().int().min(1),
+});
