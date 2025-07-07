@@ -114,3 +114,15 @@ export const orderDetailSchema = z.object({
 });
 
 export type OrderDetail = z.infer<typeof orderDetailSchema>;
+
+export const paymentSchema = z.object({
+  amount: z.number().int(), // ✅ 限制為整數
+  created_at: z.string().nullable(),
+  id: z.number(),
+  order_id: z.number().nullable(),
+  paid_at: z.string().nullable(),
+  payment_method: z.string(),
+  status: z.string(),
+  transaction_id: z.string(),
+  updated_at: z.string().nullable(),
+});
