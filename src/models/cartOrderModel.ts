@@ -18,3 +18,9 @@ export interface ClearCartResult {
   success: boolean;
   message: string;
 }
+
+export interface PaymentItem {
+  orderNumber: string;
+  MerchantTradeNo: string;
+  amount: number;
+}

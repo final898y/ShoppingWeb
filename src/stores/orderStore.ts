@@ -1,7 +1,6 @@
 import { defineStore } from "pinia";
 import { ref, watch } from "vue";
 import axios from "@/utils/axios";
-import { useCartStore } from "./cartStore";
 import type { Order } from "@/models/backendApiModel";
 import { ecPayBackendOutputSchema } from "@/models/backendApiModel";
 import { FormData, CartItem } from "@/models/cartOrderModel";
@@ -45,15 +44,17 @@ export const useOrderStore = defineStore("order", () => {
   watch(
     [formData, cartItems, totalPrice, currentOrderNumber],
     () => {
-      localStorage.setItem(
-        "currentOrderData",
-        JSON.stringify({
+      try {
+        const rawData = {
           formData: formData.value,
           cartItems: cartItems.value,
           totalPrice: totalPrice.value,
           currentOrderNumber: currentOrderNumber.value,
-        })
-      );
+        };
+        localStorage.setItem("currentOrderData", JSON.stringify(rawData));
+      } catch (e) {
+        console.error("儲存至 localStorage 失敗：", e);
+      }
     },
     { deep: true }
   );
@@ -123,6 +124,7 @@ export const useOrderStore = defineStore("order", () => {
     const tradeDateString = formatDate(tradeDate);
 
     const ecPayRequest = {
+      OrderNumber: orderNumber,
       MerchantTradeDate: tradeDateString,
       PaymentType: "aio",
       TotalAmount: Math.round(totalPrice.value),
@@ -149,8 +151,10 @@ export const useOrderStore = defineStore("order", () => {
     form.method = "POST";
     form.action = "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
 
+    const { OrderNumber, ...ecPayWithoutOrderNumber } = ecPayRequest;
+
     const ecPayFinalData = {
-      ...ecPayRequest,
+      ...ecPayWithoutOrderNumber,
       MerchantTradeNo: parsedResult.data.MerchantTradeNo,
       MerchantID: parsedResult.data.MerchantID,
       ReturnURL: parsedResult.data.ReturnURL,
