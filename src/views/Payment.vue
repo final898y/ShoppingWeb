@@ -40,8 +40,16 @@
             通知。
           </p>
           <div class="flex justify-center gap-3 mt-6 flex-wrap">
-            <button @click="retryCheck" class="btn btn-primary">
-              重新查詢付款狀態
+            <button
+              @click="retryCheck"
+              class="btn btn-primary"
+              :disabled="isRetrying"
+            >
+              <span v-if="!isRetrying">重新查詢付款狀態</span>
+              <span v-else class="flex items-center gap-2">
+                <span class="loading loading-spinner loading-xs"></span>
+                查詢中...
+              </span>
             </button>
             <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
           </div>
@@ -74,64 +82,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
-import { useOrderStore } from "@/stores/orderStore";
-import type { OrderDetail } from "@/models/backendApiModel";
-import axios from "@/utils/axios";
-import { paymentSchema } from "@/models/backendApiModel";
-
-type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "UNKNOWN";
+import { usePaymentStatus } from "@/composables/usePaymentStatus";
 
 const route = useRoute();
-const orderStore = useOrderStore();
+const orderNumber = (route.query.orderNumber as string) || "";
 
-const isLoading = ref(true);
-const paymentStatus = ref<PaymentStatus>("PENDING");
-const order = ref<OrderDetail | null>(null);
-const orderNumber = ref<string>("");
-
-onMounted(() => {
-  const queryOrderNumber = route.query.orderNumber as string;
-  if (!queryOrderNumber) {
-    paymentStatus.value = "UNKNOWN";
-    isLoading.value = false;
-    return;
-  }
-  orderNumber.value = queryOrderNumber;
-  checkPaymentStatus(queryOrderNumber);
-});
-
-async function checkPaymentStatus(orderNo: string) {
-  isLoading.value = true;
-  try {
-    const response = await axios.get("/pay/ecpay/getPaymentByOrderNumber", {
-      params: { orderNumber: orderNo },
-    });
-    const result = paymentSchema.safeParse(response.data.data);
-
-    if (result.success) {
-      const status = result.data.status;
-      if (status === "PAID") {
-        paymentStatus.value = "PAID";
-      } else if (status === "EXPIRED") {
-        paymentStatus.value = "EXPIRED";
-      } else {
-        paymentStatus.value = "PENDING"; // 不等於 PAID 也不代表失敗
-      }
-    } else {
-      paymentStatus.value = "UNKNOWN";
-    }
-  } catch (error) {
-    console.error("付款狀態查詢失敗:", error);
-    paymentStatus.value = "UNKNOWN";
-  } finally {
-    isLoading.value = false;
-  }
-}
-
-const retryCheck = async () => {
-  if (!orderNumber.value) return;
-  await checkPaymentStatus(orderNumber.value);
-};
+const { isLoading, isRetrying, paymentStatus, retryCheck } =
+  usePaymentStatus(orderNumber);
 </script>
