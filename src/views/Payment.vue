@@ -1,85 +1,87 @@
 <template>
-  <div class="flex justify-center items-center min-h-[60vh] bg-base-100 p-6">
-    <div
-      v-if="isLoading"
-      class="card bg-base-100 shadow-xl text-base-content w-full max-w-md"
-    >
-      <div class="card-body items-center text-center">
-        <h2 class="card-title">正在確認付款結果...</h2>
-        <p>請稍候，我們正在與金流服務確認您的付款狀態。</p>
-      </div>
-    </div>
+  <section class="min-h-screen bg-base-100 px-4 py-12 flex justify-center">
+    <div class="w-full max-w-screen-sm">
+      <!-- 標題區域 -->
+      <header class="mb-8 text-center">
+        <h1 class="text-3xl font-bold text-base-content">付款狀態</h1>
+        <p class="text-base-content/70 mt-2">以下是您這筆訂單的付款結果</p>
+        <p v-if="orderNumber" class="text-sm mt-2 text-base-content/50">
+          訂單編號：{{ orderNumber }}
+        </p>
+      </header>
 
-    <div
-      v-else-if="paymentStatus === 'PAID'"
-      class="card bg-success text-success-content shadow-xl w-full max-w-md"
-    >
-      <div class="card-body items-center text-center">
-        <h2 class="card-title">🎉 付款成功！</h2>
-        <p>感謝您的購買，我們將盡快為您處理訂單。</p>
-        <div class="card-actions justify-center mt-4">
-          <router-link to="/orders" class="btn btn-primary"
-            >查看我的訂單</router-link
-          >
-          <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
+      <!-- 狀態主畫面 -->
+      <main class="text-center space-y-6">
+        <!-- 載入中 -->
+        <div v-if="isLoading">
+          <span class="loading loading-spinner loading-lg text-primary"></span>
+          <p class="mt-4 text-base-content/70">正在確認付款結果，請稍候...</p>
         </div>
-      </div>
-    </div>
 
-    <div
-      v-else-if="paymentStatus === 'FAILED'"
-      class="card bg-error text-error-content shadow-xl w-full max-w-md"
-    >
-      <div class="card-body items-center text-center">
-        <h2 class="card-title">付款失敗</h2>
-        <p>喔不，在處理您的付款時發生了一些問題。</p>
-        <p v-if="order?.order_number">訂單編號: {{ order.order_number }}</p>
-        <div class="card-actions justify-center mt-4">
-          <button @click="retryPayment" class="btn btn-primary">
-            重新付款
-          </button>
-          <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
+        <!-- 已付款 -->
+        <div v-else-if="paymentStatus === 'PAID'">
+          <h2 class="text-2xl font-semibold text-success">🎉 付款成功！</h2>
+          <p class="text-base-content/70">
+            感謝您的購買，我們將盡快處理您的訂單。
+          </p>
+          <div class="flex justify-center gap-3 mt-6 flex-wrap">
+            <router-link to="/orders" class="btn btn-primary"
+              >查看訂單</router-link
+            >
+            <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <div
-      v-else-if="paymentStatus === 'expired'"
-      class="card bg-warning text-warning-content shadow-xl w-full max-w-md"
-    >
-      <div class="card-body items-center text-center">
-        <h2 class="card-title">訂單已過期</h2>
-        <p>此訂單已超過1小時的付款期限，請重新下單。</p>
-        <div class="card-actions justify-center mt-4">
-          <router-link to="/" class="btn btn-primary">回到首頁</router-link>
+        <!-- 尚未付款 -->
+        <div v-else-if="paymentStatus === 'PENDING'">
+          <h2 class="text-2xl font-semibold text-warning">付款尚未完成</h2>
+          <p class="text-base-content/70">
+            系統尚未收到您的付款資訊。請等待幾分鐘後再次查看，或留意簡訊／Email
+            通知。
+          </p>
+          <div class="flex justify-center gap-3 mt-6 flex-wrap">
+            <button @click="retryCheck" class="btn btn-primary">
+              重新查詢付款狀態
+            </button>
+            <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
+          </div>
         </div>
-      </div>
-    </div>
 
-    <div
-      v-else
-      class="card bg-neutral text-neutral-content shadow-xl w-full max-w-md"
-    >
-      <div class="card-body items-center text-center">
-        <h2 class="card-title">無法確認訂單狀態</h2>
-        <p>我們無法找到對應的訂單資訊，或發生未預期的錯誤。</p>
-        <div class="card-actions justify-center mt-4">
-          <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
+        <!-- 訂單過期 -->
+        <div v-else-if="paymentStatus === 'EXPIRED'">
+          <h2 class="text-2xl font-semibold text-error">訂單已過期</h2>
+          <p class="text-base-content/70">此訂單已超過付款期限，請重新下單。</p>
+          <div class="mt-6">
+            <router-link to="/" class="btn btn-primary">回到首頁</router-link>
+          </div>
         </div>
-      </div>
+
+        <!-- 未知錯誤 -->
+        <div v-else>
+          <h2 class="text-2xl font-semibold text-base-content">
+            無法確認訂單狀態
+          </h2>
+          <p class="text-base-content/70">
+            發生錯誤或無法查詢訂單狀態，請稍後再試或聯繫客服。
+          </p>
+          <div class="mt-6">
+            <router-link to="/" class="btn btn-secondary">回到首頁</router-link>
+          </div>
+        </div>
+      </main>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { useRoute } from "vue-router";
 import { useOrderStore } from "@/stores/orderStore";
 import type { OrderDetail } from "@/models/backendApiModel";
 import axios from "@/utils/axios";
 import { paymentSchema } from "@/models/backendApiModel";
 
-type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "expired";
+type PaymentStatus = "PENDING" | "PAID" | "EXPIRED" | "UNKNOWN";
 
 const route = useRoute();
 const orderStore = useOrderStore();
@@ -87,56 +89,49 @@ const orderStore = useOrderStore();
 const isLoading = ref(true);
 const paymentStatus = ref<PaymentStatus>("PENDING");
 const order = ref<OrderDetail | null>(null);
+const orderNumber = ref<string>("");
 
-onMounted(async () => {
-  const orderNumber = route.query.orderNumber as string;
-
-  if (!orderNumber) {
+onMounted(() => {
+  const queryOrderNumber = route.query.orderNumber as string;
+  if (!queryOrderNumber) {
+    paymentStatus.value = "UNKNOWN";
     isLoading.value = false;
-    paymentStatus.value = "FAILED";
     return;
   }
+  orderNumber.value = queryOrderNumber;
+  checkPaymentStatus(queryOrderNumber);
+});
 
+async function checkPaymentStatus(orderNo: string) {
+  isLoading.value = true;
   try {
-    // 根據後端驗證的最終狀態來決定顯示成功或失敗
-    const responseData = await getPaymentByOrderNumber(orderNumber);
-    const result = paymentSchema.safeParse(responseData.data);
-    console.log(result);
+    const response = await axios.get("/pay/ecpay/getPaymentByOrderNumber", {
+      params: { orderNumber: orderNo },
+    });
+    const result = paymentSchema.safeParse(response.data.data);
 
-    if (result.success && result.data.status === "PAID") {
-      paymentStatus.value = "PAID";
+    if (result.success) {
+      const status = result.data.status;
+      if (status === "PAID") {
+        paymentStatus.value = "PAID";
+      } else if (status === "EXPIRED") {
+        paymentStatus.value = "EXPIRED";
+      } else {
+        paymentStatus.value = "PENDING"; // 不等於 PAID 也不代表失敗
+      }
     } else {
-      paymentStatus.value = "FAILED";
+      paymentStatus.value = "UNKNOWN";
     }
   } catch (error) {
-    console.error("Failed to verify payment:", error);
-    paymentStatus.value = "FAILED";
+    console.error("付款狀態查詢失敗:", error);
+    paymentStatus.value = "UNKNOWN";
   } finally {
     isLoading.value = false;
   }
-});
-
-async function getPaymentByOrderNumber(orderNumber: string) {
-  try {
-    const response = await axios.get("/pay/ecpay/getPaymentByOrderNumber", {
-      params: {
-        orderNumber: orderNumber, // 會自動轉成 query string
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("查詢付款資料失敗:", error);
-    throw error;
-  }
 }
 
-const retryPayment = async () => {
-  if (!order.value?.order_number) return;
-  try {
-    await orderStore.retryPayment(order.value.order_number);
-  } catch (error) {
-    console.error("Retry payment failed:", error);
-    alert("重新付款失敗，請稍後再試或聯繫客服。");
-  }
+const retryCheck = async () => {
+  if (!orderNumber.value) return;
+  await checkPaymentStatus(orderNumber.value);
 };
 </script>
