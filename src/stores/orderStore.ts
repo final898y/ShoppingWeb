@@ -4,6 +4,7 @@ import axios from "@/utils/axios";
 import type { Order } from "@/models/backendApiModel";
 import { ecPayBackendOutputSchema } from "@/models/backendApiModel";
 import { FormData, CartItem } from "@/models/cartOrderModel";
+import { API_BASE_URL } from "@/config";
 
 export const useOrderStore = defineStore("order", () => {
   // 訂單資料
@@ -131,7 +132,7 @@ export const useOrderStore = defineStore("order", () => {
       TradeDesc: "線上購物付款",
       ItemName: cartItems.value.map((item) => item.name).join("#"),
       ChoosePayment: "ALL",
-      ClientBackURL: `https://localhost:5173/payment?orderNumber=${orderNumber}`,
+      ClientBackURL: `${API_BASE_URL}payment?orderNumber=${orderNumber}`,
     };
 
     const response = await axios.post("/pay/ecpay/getcheckout", ecPayRequest);
