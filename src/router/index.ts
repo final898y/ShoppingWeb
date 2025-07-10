@@ -61,6 +61,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import("../views/Orders.vue"),
   },
   {
+    path: "/order/:orderNumber",
+    name: "OrderDetail",
+    component: () => import("../views/OrderDetail.vue"),
+    meta: { requiresAuth: true }, // 假設查看訂單詳情也需要登入
+  },
+  {
     path: "/404",
     name: "NotFound",
     component: () => import("../views/NotFound.vue"),

@@ -1,31 +1,62 @@
 <template>
-  <div class="orders-container">
-    <h1>我的訂單</h1>
-    <div v-if="isLoading" class="loading">
-      <p>正在載入訂單...</p>
-    </div>
-    <div v-else-if="orders.length === 0" class="no-orders">
-      <p>您目前沒有任何訂單。</p>
-      <router-link to="/" class="btn btn-primary">去逛逛</router-link>
-    </div>
-    <div v-else class="order-list">
-      <div v-for="order in orders" :key="order.id" class="order-card">
-        <div class="order-header">
-          <div>
-            <span class="order-id">訂單編號: {{ order.id }}</span>
-            <span :class="['order-status', getStatusClass(order.status)]">{{ translateStatus(order.status) }}</span>
-          </div>
-          <div class="order-date">{{ new Date(order.createdAt).toLocaleDateString() }}</div>
-        </div>
-        <div class="order-body">
-          <div class="order-items">
-             <div v-for="item in order.items" :key="item.productId" class="order-item">
-                <span>{{ item.product.name }} x {{ item.quantity }}</span>
-                <span>NT$ {{ item.price * item.quantity }}</span>
+  <div class="min-h-[calc(100vh-16rem)] p-6 bg-base-100">
+    <div class="container mx-auto max-w-4xl">
+      <h1 class="text-2xl font-bold mb-6">我的訂單</h1>
+
+      <!-- Loading Spinner -->
+      <div v-if="isLoading" class="text-center p-10">
+        <span class="loading loading-lg loading-spinner"></span>
+      </div>
+
+      <!-- No Orders -->
+      <div
+        v-else-if="!isLoading && orders.length === 0"
+        class="text-center text-base-content/80 p-10 card bg-base-200"
+      >
+        <p class="text-lg">您目前沒有任何訂單。</p>
+        <router-link to="/" class="btn btn-primary mt-4">去逛逛</router-link>
+      </div>
+
+      <!-- Orders List -->
+      <div v-else class="space-y-4">
+        <div
+          v-for="order in orders"
+          :key="order.order_number"
+          class="card bg-base-200 shadow-xl border border-base-300 transition-all hover:shadow-2xl hover:-translate-y-1"
+        >
+          <div class="card-body">
+            <div class="flex justify-between items-start gap-4">
+              <div>
+                <p class="font-semibold text-sm text-base-content/70">
+                  訂單編號
+                </p>
+                <h2 class="card-title">{{ order.order_number }}</h2>
+              </div>
+              <div class="text-right">
+                <div class="badge" :class="getStatusClass(order.status)">
+                  {{ translateStatus(order.status) }}
+                </div>
+                <p class="text-sm text-base-content/70 mt-1">
+                  {{ new Date(order.created_at).toLocaleDateString() }}
+                </p>
+              </div>
             </div>
-          </div>
-          <div class="order-total">
-            <p>總金額: <strong>NT$ {{ order.totalAmount }}</strong></p>
+
+            <div class="divider my-2"></div>
+
+            <div class="flex justify-between items-end">
+              <div>
+                <p class="text-base-content/70">
+                  收件人: {{ order.recipient_name }}
+                </p>
+                <p class="text-lg font-bold">
+                  總金額: ${{ parseFloat(order.total_amount).toFixed(2) }}
+                </p>
+              </div>
+              <div class="card-actions">
+                                <router-link :to="{ name: 'OrderDetail', params: { orderNumber: order.order_number } }" class="btn btn-primary btn-sm">查看詳情</router-link>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -34,160 +65,77 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { useOrderStore } from '@/stores/orderStore';
-import type { Order } from '@/models/backendApiModel';
+import { ref, onMounted } from "vue";
+import axios from "@/utils/axios";
+import { useToast } from "@/composables/useToast";
 
-const orderStore = useOrderStore();
+// 根據 API 文件定義的訂單資料結構
+interface Order {
+  id: number;
+  order_number: string;
+  total_amount: string;
+  status: "PENDING" | "PAID" | "SHIPPED" | "COMPLETED" | "CANCELLED";
+  recipient_name: string;
+  created_at: string;
+  payments: {
+    status: string;
+    payment_method: string;
+  }[];
+}
+
 const orders = ref<Order[]>([]);
 const isLoading = ref(true);
+const { showToast } = useToast();
 
-onMounted(async () => {
+// 獲取訂單資料
+const fetchOrders = async () => {
+  // TODO: 未來從 auth store 或使用者狀態中取得 userUuid
+  const userUuid = "19de471a-2391-4205-baa9-774a691ca256"; // 暫時寫死的 UUID
+  isLoading.value = true;
   try {
-    // 假設 store 有一個 `fetchUserOrders` 的 action
-    orders.value = await orderStore.fetchUserOrders();
+    const response = await axios.get("/checkoutflow/orders", {
+      params: { userUuid },
+    });
+    if (response.data.success) {
+      orders.value = response.data.data;
+    } else {
+      throw new Error(response.data.message || "未能成功獲取訂單");
+    }
   } catch (error) {
-    console.error("Failed to fetch orders:", error);
+    console.error("載入訂單失敗:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "發生未知錯誤";
+    showToast(`載入訂單失敗: ${errorMessage}`, "warning");
   } finally {
     isLoading.value = false;
   }
+};
+
+onMounted(() => {
+  fetchOrders();
 });
 
-const translateStatus = (status: string) => {
-  const statusMap: { [key: string]: string } = {
-    'PENDING': '待付款',
-    'PAID': '已付款',
-    'SHIPPED': '已出貨',
-    'COMPLETED': '已完成',
-    'CANCELLED': '已取消',
+// 翻譯訂單狀態
+const translateStatus = (status: Order["status"]): string => {
+  const statusMap: { [key in Order["status"]]: string } = {
+    PENDING: "待付款",
+    PAID: "已付款",
+    SHIPPED: "已出貨",
+    COMPLETED: "已完成",
+    CANCELLED: "已取消",
   };
   return statusMap[status] || status;
 };
 
-const getStatusClass = (status: string) => {
-  return `status-${status.toLowerCase()}`;
+// 根據狀態返回對應的 DaisyUI 樣式
+const getStatusClass = (status: Order["status"]): string => {
+  const classMap: { [key in Order["status"]]: string } = {
+    PENDING: "badge-warning",
+    PAID: "badge-success",
+    SHIPPED: "badge-info",
+    COMPLETED: "badge-primary",
+    CANCELLED: "badge-ghost",
+  };
+  return classMap[status] || "badge-secondary";
 };
-
 </script>
-
-<style scoped>
-.orders-container {
-  max-width: 900px;
-  margin: 2rem auto;
-  padding: 1rem;
-}
-
-h1 {
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.loading, .no-orders {
-  text-align: center;
-  padding: 3rem;
-  background-color: #f9f9f9;
-  border-radius: 8px;
-}
-
-.order-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-.order-card {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-  transition: box-shadow 0.3s ease;
-}
-
-.order-card:hover {
-    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.order-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #e0e0e0;
-  border-top-left-radius: 8px;
-  border-top-right-radius: 8px;
-}
-
-.order-id {
-  font-weight: bold;
-  font-size: 1.1rem;
-  margin-right: 1rem;
-}
-
-.order-date {
-  color: #6c757d;
-}
-
-.order-status {
-  padding: 0.25rem 0.75rem;
-  border-radius: 12px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #fff;
-}
-
-.status-paid {
-  background-color: #28a745;
-}
-.status-pending {
-  background-color: #ffc107;
-  color: #212529;
-}
-.status-shipped {
-  background-color: #17a2b8;
-}
-.status-completed {
-  background-color: #007bff;
-}
-.status-cancelled {
-  background-color: #6c757d;
-}
-
-.order-body {
-    padding: 1.5rem;
-}
-
-.order-items {
-    margin-bottom: 1rem;
-}
-
-.order-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.order-item:last-child {
-    border-bottom: none;
-}
-
-.order-total {
-  text-align: right;
-  margin-top: 1rem;
-  font-size: 1.2rem;
-}
-
-.btn-primary {
-    text-decoration: none;
-    background-color: #007bff;
-    color: white;
-    padding: 0.75rem 1.5rem;
-    border-radius: 5px;
-    transition: background-color 0.3s ease;
-}
-
-.btn-primary:hover {
-    background-color: #0056b3;
-}
-</style>
