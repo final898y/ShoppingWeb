@@ -108,8 +108,8 @@ export const orderDetailSchema = z.object({
   recipient_phone: z.string(),
   recipient_email: z.string(),
   payment_method: z.string(),
-  created_at: z.date(),
-  paid_at: z.date().nullable(),
+  created_at: z.string(),
+  paid_at: z.string().nullable(),
   items: z.array(orderItemSchema),
 });
 

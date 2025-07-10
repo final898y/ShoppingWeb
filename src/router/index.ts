@@ -64,7 +64,7 @@ const routes: RouteRecordRaw[] = [
     path: "/order/:orderNumber",
     name: "OrderDetail",
     component: () => import("../views/OrderDetail.vue"),
-    meta: { requiresAuth: true }, // 假設查看訂單詳情也需要登入
+    //meta: { requiresAuth: true }, // TODO: 需要登入才能查看訂單詳情
   },
   {
     path: "/404",
