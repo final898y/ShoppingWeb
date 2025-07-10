@@ -60,7 +60,7 @@ axios.interceptors.response.use(
 
       try {
         // 嘗試刷新 token
-        const response = await axios.post("auth/refresh");
+        const response = await axios.post("/auth/refresh");
         const refreshStatus = response.data.success; // 假設後端返回新 token
 
         // 如果刷新成功，處理排隊的請求
